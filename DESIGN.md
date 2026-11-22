@@ -22,7 +22,7 @@ Three adjectives: **editorial, exact, warm.** Aesthetic risk: a large, high-cont
 | `--ef-paper-sunk` | `#E9E0CE` | inset wells |
 | `--ef-ink` | `#242019` | primary text (warm off-black) |
 | `--ef-ink-2` | `#5B5344` | secondary text |
-| `--ef-ink-3` | `#857B68` | captions, axis labels |
+| `--ef-ink-3` | `#6B6152` | captions, axis labels |
 | `--ef-line` | `#D3C5AD` | hairlines, dividers |
 | `--ef-sienna` | `#A64A24` | primary accent, user blunders |
 | `--ef-sienna-deep` | `#7C361A` | accent hover/pressed |
@@ -71,7 +71,7 @@ Contrast: body text `--ef-ink` on `--ef-paper` ≥ 12:1. `--ef-ink-3` is only fo
 - Empty states state the next action, not an apology.
 
 ## Accessibility
-- WCAG AA: 4.5:1 body, 3:1 large text and UI borders.
+- WCAG AA: 4.5:1 body, 3:1 large text and UI borders. Verified with axe-core on Dashboard, Openings, Focus, Puzzles, Sparring, Roadmap, Settings and Match Lab (zero serious or critical findings).
 - Every interactive element reachable by Tab, visible focus, board movable by keyboard (arrow keys to select, Enter to move) where feasible; otherwise a move list is the keyboard path.
 - Charts have a text summary and a data table fallback (`aria-describedby`).
 - Color is never the only signal: classification uses label + value + color.

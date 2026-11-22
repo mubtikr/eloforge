@@ -32,6 +32,16 @@ pub struct DepthAccuracy {
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export, export_to = EXPORT)]
+pub struct TimeBucket {
+    pub label: String,
+    pub midpoint_seconds: f64,
+    pub moves: i32,
+    pub blunder_rate: f64,
+    pub accuracy: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export, export_to = EXPORT)]
 pub struct SessionIndexRate {
     pub index: i32,
     pub games: i32,
@@ -55,6 +65,7 @@ pub struct FocusReport {
     pub hour_heatmap: Vec<HourAccuracy>,
     pub depth_fatigue: Vec<DepthAccuracy>,
     pub session_curve: Vec<SessionIndexRate>,
+    pub time_buckets: Vec<TimeBucket>,
 }
 
 #[derive(Debug, Clone, sqlx::FromRow)]
@@ -200,6 +211,50 @@ pub async fn compute_focus(pool: &PgPool, user_id: Uuid) -> AppResult<FocusRepor
         bucket("31+", &moves, 31, i32::MAX),
     ];
 
+    let time_ranges = [
+        ("<1s", 0.0, 1.0, 0.5),
+        ("1–2s", 1.0, 2.0, 1.5),
+        ("2–4s", 2.0, 4.0, 3.0),
+        ("4–8s", 4.0, 8.0, 6.0),
+        ("8–15s", 8.0, 15.0, 11.5),
+        ("15s+", 15.0, f64::MAX, 22.0),
+    ];
+    let time_buckets = time_ranges
+        .into_iter()
+        .map(|(label, min, max, midpoint)| {
+            let filtered: Vec<&FocusMove> = moves
+                .iter()
+                .filter(|mv| {
+                    mv.time_spent_sec
+                        .map(|seconds| seconds >= min && seconds < max)
+                        .unwrap_or(false)
+                })
+                .collect();
+            let bad = filtered
+                .iter()
+                .filter(|mv| mv.classification.as_deref().map(is_bad).unwrap_or(false))
+                .count();
+            let accuracy = mean(
+                &filtered
+                    .iter()
+                    .filter_map(|mv| mv.epl)
+                    .map(accuracy_from_epl)
+                    .collect::<Vec<_>>(),
+            );
+            TimeBucket {
+                label: label.to_string(),
+                midpoint_seconds: midpoint,
+                moves: filtered.len() as i32,
+                blunder_rate: if filtered.is_empty() {
+                    0.0
+                } else {
+                    bad as f64 / filtered.len() as f64 * 100.0
+                },
+                accuracy,
+            }
+        })
+        .collect();
+
     let sessions = group_sessions(&games);
     let mut game1: Vec<f64> = Vec::new();
     let mut game3plus: Vec<f64> = Vec::new();
@@ -263,6 +318,7 @@ pub async fn compute_focus(pool: &PgPool, user_id: Uuid) -> AppResult<FocusRepor
         hour_heatmap,
         depth_fatigue,
         session_curve,
+        time_buckets,
     })
 }
 

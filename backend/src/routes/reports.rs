@@ -1,5 +1,7 @@
 use axum::{
     extract::{Path, State},
+    http::StatusCode,
+    response::{IntoResponse, Response},
     Json,
 };
 use uuid::Uuid;
@@ -7,7 +9,7 @@ use uuid::Uuid;
 use crate::{
     analyzer::focus_tilt::{compute_focus, FocusReport},
     auth::AuthUser,
-    error::{AppError, AppResult},
+    error::AppResult,
     models::GameDetail,
     reports::{
         self,
@@ -73,14 +75,11 @@ pub async fn weekly_generate(
     Ok(Json(generate_weekly(&state.db, &state.ai, auth.id).await?))
 }
 
-pub async fn weekly_latest(
-    State(state): State<AppState>,
-    auth: AuthUser,
-) -> AppResult<Json<WeeklyReport>> {
-    latest_weekly(&state.db, auth.id)
-        .await?
-        .map(Json)
-        .ok_or_else(|| AppError::not_found("No weekly briefing has been generated yet."))
+pub async fn weekly_latest(State(state): State<AppState>, auth: AuthUser) -> AppResult<Response> {
+    Ok(match latest_weekly(&state.db, auth.id).await? {
+        Some(report) => Json(report).into_response(),
+        None => StatusCode::NO_CONTENT.into_response(),
+    })
 }
 
 pub async fn curriculum_generate(

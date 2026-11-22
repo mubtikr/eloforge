@@ -18,7 +18,7 @@ export type DepthAccuracy = { label: string, moves: number, accuracy: number, };
 
 export type EndgameTypeStat = { kind: string, reached: number, converted: number, rate: number, };
 
-export type FocusReport = { total_user_moves: number, impulsive_blunders: number, impulsivity_index: number, blunder_count: number, cascade_instances: number, post_blunder_cascade_rate: number, sessions_analyzed: number, game1_accuracy: number, game3plus_accuracy: number, session_tilt_drop: number, hour_heatmap: Array<HourAccuracy>, depth_fatigue: Array<DepthAccuracy>, session_curve: Array<SessionIndexRate>, };
+export type FocusReport = { total_user_moves: number, impulsive_blunders: number, impulsivity_index: number, blunder_count: number, cascade_instances: number, post_blunder_cascade_rate: number, sessions_analyzed: number, game1_accuracy: number, game3plus_accuracy: number, session_tilt_drop: number, hour_heatmap: Array<HourAccuracy>, depth_fatigue: Array<DepthAccuracy>, session_curve: Array<SessionIndexRate>, time_buckets: Array<TimeBucket>, };
 
 export type GameDetail = { game: GameSummary, initial_fen: string, accuracy_white: number | null, accuracy_black: number | null, eval_peak: number | null, analysis: unknown | null, moves: Array<MoveDto>, reflections: Array<ReflectionDto>, };
 
@@ -103,6 +103,8 @@ export type SyncStatus = { running: boolean, total_games: number, analyzed_games
 export type SyncTriggerResponse = { accepted: boolean, message: string, };
 
 export type TagCount = { tag: string, label: string, count: number, };
+
+export type TimeBucket = { label: string, midpoint_seconds: number, moves: number, blunder_rate: number, accuracy: number, };
 
 export type UserDto = { id: string, chesscom_username: string, display_name: string | null, country: string | null, avatar_url: string | null, title: string | null, current_elo: number | null, peak_elo: number | null, created_at: string, };
 

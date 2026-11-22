@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom'
 
 import { api, getErrorMessage } from '../api/client'
 import type { AuthResponse, ChallengeStart } from '../api/types'
+import { useAuth } from '../hooks/useAuth'
 
 const EVAL_POINTS = [
   50, 52, 55, 53, 58, 61, 59, 64, 68, 66, 72, 70, 75, 73, 79, 77, 82, 80, 86, 84, 88, 91, 89, 93,
@@ -143,9 +144,36 @@ function ConnectForm() {
       <p className="ef-label">Step 2 of 2 · prove ownership</p>
       <h2 className="connect__title">Place this code in your profile.</h2>
       <p className="connect__copy">
-        Open Chess.com → Settings → Profile, paste the code into <strong>Location</strong> or{' '}
-        <strong>Name</strong>, save, then verify. The code expires in 10 minutes.
+        Open{' '}
+        <a
+          href="https://www.chess.com/settings/profile"
+          target="_blank"
+          rel="noreferrer"
+          className="connect__link"
+        >
+          Chess.com → Settings → Profile
+        </a>
+        , paste the code into <strong>Location</strong> or <strong>Name</strong>, save, then verify.
+        The code expires in 10 minutes.
       </p>
+      {challenge.profile ? (
+        <div className="profile-preview">
+          {challenge.profile.avatar ? (
+            <img src={challenge.profile.avatar} alt="" className="profile-preview__avatar" />
+          ) : (
+            <span className="profile-preview__avatar profile-preview__avatar--fallback">
+              {challenge.profile.username.slice(0, 1).toUpperCase()}
+            </span>
+          )}
+          <div>
+            <strong>{challenge.profile.name ?? challenge.profile.username}</strong>
+            <span className="ef-mono">
+              @{challenge.profile.username}
+              {challenge.profile.rapid_rating ? ` · Rapid ${challenge.profile.rapid_rating}` : ''}
+            </span>
+          </div>
+        </div>
+      ) : null}
       <button className="nonce" type="button" onClick={copyNonce} aria-label="Copy verification code">
         <span className="nonce__value ef-mono">{challenge.nonce}</span>
         <span className="nonce__copy">
@@ -192,11 +220,12 @@ function ConnectForm() {
 }
 
 export default function Landing() {
+  const { user } = useAuth()
   return (
     <div className="landing ef-grain">
       <header className="landing__nav">
         <div className="ef-shell landing__nav-inner">
-          <Link className="wordmark" to="/" aria-label="EloForge home">
+          <Link className="wordmark" to="/">
             <span className="wordmark__mark" aria-hidden="true">
               EF
             </span>
@@ -207,8 +236,8 @@ export default function Landing() {
             <a href="#reports">Reports</a>
             <a href="#ladder">Road to 1000</a>
           </nav>
-          <Link className="ef-btn ef-btn--ghost landing__cta" to="/connect">
-            Connect Chess.com
+          <Link className="ef-btn ef-btn--ghost landing__cta" to={user ? '/app' : '/connect'}>
+            {user ? 'Open study room' : 'Connect Chess.com'}
           </Link>
         </div>
       </header>
@@ -216,9 +245,7 @@ export default function Landing() {
       <main>
         <section className="ef-shell hero">
           <div className="hero__copy ef-fade-in">
-            <p className="eyebrow">
-              <span className="eyebrow__line" /> Personal chess study room
-            </p>
+            <span className="hero__rule" aria-hidden="true" />
             <h1 className="hero__title">
               Your games already
               <br />
@@ -259,14 +286,30 @@ export default function Landing() {
             <div className="hero__evidence">
               <EvalIllustration />
             </div>
-            <ConnectForm />
+            {user ? (
+              <div className="connect connect--connected">
+                <p className="ef-label">Account connected</p>
+                <h2 className="connect__title">
+                  {user.display_name ?? user.chesscom_username}
+                </h2>
+                <p className="connect__copy">
+                  {user.current_elo ? `Rapid ${user.current_elo}. ` : ''}
+                  Your games, drills and coach memory are waiting in the study room.
+                </p>
+                <Link className="ef-btn ef-btn--primary connect__submit" to="/app">
+                  Open today's study room
+                  <ArrowRight size={15} strokeWidth={1.8} />
+                </Link>
+              </div>
+            ) : (
+              <ConnectForm />
+            )}
           </div>
         </section>
 
         <section className="method" id="method">
           <div className="ef-shell">
             <div className="method__head">
-              <p className="ef-label">The method</p>
               <h2>
                 Facts first.
                 <br />
@@ -315,14 +358,14 @@ export default function Landing() {
         <section className="reports" id="reports">
           <div className="ef-shell reports__inner">
             <div className="reports__copy">
-              <p className="ef-label">Eight reports, one evidence trail</p>
               <h2>Read the game like a scorebook, not a scoreboard.</h2>
               <p>
-                Phase accuracy, opening performance, blunder taxonomy, conversion rate, tilt curve,
-                reflection history and the road ahead — all built from the same verified data.
+                Eight reports, one evidence trail: phase accuracy, opening performance, blunder
+                taxonomy, conversion rate, tilt curve, reflection history and the road ahead — all
+                built from the same verified data.
               </p>
-              <Link className="ef-btn ef-btn--ghost" to="/connect">
-                Connect to see yours
+              <Link className="ef-btn ef-btn--ghost" to={user ? '/app' : '/connect'}>
+                {user ? 'Open your reports' : 'Connect to see yours'}
               </Link>
             </div>
             <ul className="reports__list">
@@ -365,8 +408,7 @@ export default function Landing() {
         <section className="ladder" id="ladder">
           <div className="ef-shell ladder__inner">
             <div className="ladder__cta">
-              <p className="ef-label">The ladder</p>
-              <h2>500 → 2500 is not one jump. It is eight unlocked doors.</h2>
+              <h2>500 → 2500 is not one jump. It is nine unlocked doors.</h2>
               <p>
                 Stage 1 is not opening theory. It is stopping free pieces. EloForge will not prescribe
                 a Sicilian until the evidence says you have earned it.
@@ -389,8 +431,16 @@ export default function Landing() {
                         : index === 2
                           ? 'Conversion & core repertoire'
                           : index === 3
-                            ? 'Eleven hundred, quietly'
-                            : 'Mastery'}
+                            ? 'Structure & plans'
+                            : index === 4
+                              ? 'Calculation'
+                              : index === 5
+                                ? 'Repertoire identity'
+                                : index === 6
+                                  ? 'Prophylaxis'
+                                  : index === 7
+                                    ? 'Mastery'
+                                    : 'Grandmaster ladder'}
                   </span>
                 </li>
               ))}

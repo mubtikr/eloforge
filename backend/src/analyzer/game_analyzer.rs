@@ -308,11 +308,17 @@ async fn analyze_inner(
         let after = &snapshots[index + 1];
         let win_before = before.win_for(mover_white);
         let win_after = after.win_for(mover_white);
-        let epl = ((win_before - win_after) / 100.0).max(0.0);
-        let classification = classify(epl, win_before, win_after);
+        let best_move_uci = before.best_uci.clone();
+        let played_is_best = best_move_uci.as_deref() == Some(mv.uci.as_str());
+        let raw_epl = ((win_before - win_after) / 100.0).max(0.0);
+        let epl = if played_is_best { 0.0 } else { raw_epl };
+        let classification = if played_is_best {
+            "best"
+        } else {
+            classify(epl, win_before, win_after)
+        };
         let accuracy = accuracy_from_epl(epl);
         let phase = phase_for_ply(mv.ply, opening_end, endgame_start).to_string();
-        let best_move_uci = before.best_uci.clone();
         let best_move_san = best_move_uci
             .as_deref()
             .and_then(|uci| uci_to_san(&mv.fen_before, uci));

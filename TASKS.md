@@ -37,14 +37,14 @@
 - [x] **T4.5** Implement Goal & Reminder Worker (`backend/src/notifications/`): cron runner sending daily study nudges, streak alerts, and tilt warnings via Telegram Bot Webhook, SMTP email, or Web Push.
 
 ## Phase 5: Frontend Application & Impeccable Design Pass
-- [ ] **T5.1** Build Auth / Onboarding view: "Connect Chess.com" flow with verification code copy button, live check, and non-affiliation footer.
-- [ ] **T5.2** Build Main Coach Dashboard: Current Elo + Road-to-1000 progress bar, Top 3 Rating Leaks, Today's Due Blunder Puzzles count, Weekly AI Coach Briefing, and live Sync button.
-- [ ] **T5.3** Build Match Lab (`/games/:id`): 60fps `chessground` board with best-move vs. blunder arrows, synced Eval + Clock timeline chart, phase accuracy breakdown, deterministic mistake badges, and interactive **"Why did I play this?"** AI Coach Reflection drawer (streaming SSE).
-- [ ] **T5.4** Build Opening & Book Explorer (`/openings`): White/Black ECO performance matrix, out-of-book depth, principle violation flags, and Elo-appropriate repertoire advice.
-- [ ] **T5.5** Build Focus & Tilt Lab (`/focus`): Impulsivity scatter plot (move time vs. blunder rate), session tilt curve, and time-of-day accuracy heatmap.
-- [ ] **T5.6** Build Personal Puzzle Trainer (`/puzzles`) and Endgame Sparring Arena (`/sparring`) with instant move feedback, hints, and FSRS rating controls.
-- [ ] **T5.7** Build Road-to-GM & Goals Hub (`/roadmap`) + Notification Settings (`/settings`).
-- [ ] **T5.8** Execute Impeccable audit cycle: `/impeccable critique`, `/impeccable polish`, `/impeccable audit`, `/impeccable harden`, and verify `npx impeccable detect src/` passes with 0 errors.
+- [x] **T5.1** Build Auth / Onboarding view: "Connect Chess.com" flow with verification code copy button, live check, and non-affiliation footer.
+- [x] **T5.2** Build Main Coach Dashboard: Current Elo + Road-to-1000 progress bar, Top 3 Rating Leaks, Today's Due Blunder Puzzles count, Weekly AI Coach Briefing, and live Sync button.
+- [x] **T5.3** Build Match Lab (`/games/:id`): 60fps `chessground` board with best-move vs. blunder arrows, synced Eval + Clock timeline chart, phase accuracy breakdown, deterministic mistake badges, and interactive **"Why did I play this?"** AI Coach Reflection drawer (streaming SSE).
+- [x] **T5.4** Build Opening & Book Explorer (`/openings`): White/Black ECO performance matrix, out-of-book depth, principle violation flags, and Elo-appropriate repertoire advice.
+- [x] **T5.5** Build Focus & Tilt Lab (`/focus`): Impulsivity scatter plot (move time vs. blunder rate), session tilt curve, and time-of-day accuracy heatmap.
+- [x] **T5.6** Build Personal Puzzle Trainer (`/puzzles`) and Endgame Sparring Arena (`/sparring`) with instant move feedback, hints, and FSRS rating controls.
+- [x] **T5.7** Build Road-to-GM & Goals Hub (`/roadmap`) + Notification Settings (`/settings`).
+- [x] **T5.8** Execute Impeccable audit cycle: `/impeccable critique`, `/impeccable polish`, `/impeccable audit`, `/impeccable harden`, and verify `npx impeccable detect src/` passes with 0 errors.
 
 ## Phase 6: Production Hardening
 - [ ] **T6.1** Add Prometheus `/metrics` endpoint (Stockfish queue depth, avg analysis latency, OpenCode Go request latency & token usage).
