@@ -137,14 +137,9 @@ impl AuthProvider for ChessComChallengeProvider {
         let nonce = generate_nonce();
         let expires_at = Utc::now() + Duration::minutes(10);
 
-        sqlx::query(
-            "DELETE FROM auth_challenges
-             WHERE (username = $1 AND verified_at IS NULL)
-                OR expires_at < now() - interval '1 day'",
-        )
-        .bind(&profile.username)
-        .execute(&self.db)
-        .await?;
+        sqlx::query("DELETE FROM auth_challenges WHERE expires_at < now() - interval '1 day'")
+            .execute(&self.db)
+            .await?;
 
         let challenge_id: Uuid = sqlx::query_scalar(
             "INSERT INTO auth_challenges (username, nonce, expires_at, ip_hash)
@@ -206,9 +201,20 @@ impl AuthProvider for ChessComChallengeProvider {
         });
 
         if !found {
+            let current = profile
+                .location
+                .as_deref()
+                .filter(|value| !value.trim().is_empty())
+                .or_else(|| {
+                    profile
+                        .name
+                        .as_deref()
+                        .filter(|value| !value.trim().is_empty())
+                })
+                .unwrap_or("empty");
             return Err(AppError::BadRequest(format!(
-                "We could not find {} in your Chess.com profile Location or Name field. Save the field, then verify again.",
-                row.1
+                "We could not find {} in your profile. Chess.com currently reports {:?} in Location/Name. Click Save after pasting the code from this tab, give Chess.com a few seconds, then press Verify again.",
+                row.1, current
             )));
         }
 

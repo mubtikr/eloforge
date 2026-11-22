@@ -186,12 +186,15 @@ function ConnectForm() {
           <span>01</span> Open your Chess.com profile settings.
         </li>
         <li>
-          <span>02</span> Paste <span className="ef-mono">{challenge.nonce}</span> into Location.
+          <span>02</span> Paste <span className="ef-mono">{challenge.nonce}</span> into Location, then click Save.
         </li>
         <li>
-          <span>03</span> Save, then press verify below.
+          <span>03</span> Wait a few seconds for Chess.com to publish the change, then press Verify.
         </li>
       </ol>
+      <p className="connect__hint">
+        Use the code on this tab. If you opened an older tab, its code will not match the profile.
+      </p>
       <button
         className="ef-btn ef-btn--primary connect__submit"
         type="button"
