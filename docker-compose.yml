@@ -1,0 +1,97 @@
+name: eloforge
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-eloforge}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-eloforge}
+      POSTGRES_DB: ${POSTGRES_DB:-eloforge}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-eloforge} -d ${POSTGRES_DB:-eloforge}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [backend]
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    restart: unless-stopped
+    command: ["valkey-server", "--appendonly", "yes", "--save", "60", "1"]
+    volumes:
+      - valkeydata:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [backend]
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-eloforge}:${POSTGRES_PASSWORD:-eloforge}@postgres:5432/${POSTGRES_DB:-eloforge}
+      VALKEY_URL: redis://valkey:6379
+      JWT_SECRET: ${JWT_SECRET:-dev-only-jwt-secret-change-me-0123456789abcdef}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      PORT: 8080
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3000}
+      LOG_FORMAT: ${LOG_FORMAT:-json}
+      RUST_LOG: ${RUST_LOG:-info,eloforge_api=info}
+      STOCKFISH_PATH: /usr/local/bin/stockfish
+      STOCKFISH_WORKERS: ${STOCKFISH_WORKERS:-4}
+      STOCKFISH_HASH_MB: ${STOCKFISH_HASH_MB:-128}
+      STOCKFISH_TIMEOUT_MS: ${STOCKFISH_TIMEOUT_MS:-5000}
+      ANALYSIS_DEPTH_FULL: ${ANALYSIS_DEPTH_FULL:-14}
+      ANALYSIS_DEPTH_CRITICAL: ${ANALYSIS_DEPTH_CRITICAL:-20}
+      OPENCODE_API_KEY: ${OPENCODE_API_KEY:-}
+      OPENCODE_GO_BASE_URL: ${OPENCODE_GO_BASE_URL:-https://opencode.ai/zen/go/v1}
+      OPENCODE_GO_MODEL: ${OPENCODE_GO_MODEL:-deepseek-v4.1-flash}
+      OPENCODE_GO_PROTOCOL: ${OPENCODE_GO_PROTOCOL:-chat}
+      AI_DAILY_TOKEN_BUDGET: ${AI_DAILY_TOKEN_BUDGET:-250000}
+      CHESSCOM_USER_AGENT: "${CHESSCOM_USER_AGENT:-EloForge/1.0 (contact: contact@eloforge.app)}"
+      CHESSCOM_MIN_INTERVAL_MS: ${CHESSCOM_MIN_INTERVAL_MS:-200}
+      SYNC_INTERVAL_MINUTES: ${SYNC_INTERVAL_MINUTES:-15}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-coach@eloforge.app}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:contact@eloforge.app}
+    ports:
+      - "${API_PORT:-8080}:8080"
+    networks: [backend]
+
+  web:
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-3000}:80"
+    networks: [backend]
+
+volumes:
+  pgdata:
+  valkeydata:
+
+networks:
+  backend:
+    driver: bridge

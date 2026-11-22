@@ -1,0 +1,31 @@
+# Rust
+/target
+**/*.rs.bk
+backend/.sqlx
+
+# Frontend
+frontend/node_modules
+frontend/dist
+frontend/.vite
+*.tsbuildinfo
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+vapid-private*
+
+# OS / editor
+.DS_Store
+.idea
+.vscode/*
+!.vscode/extensions.json
+*.swp
+
+# Runtime
+backups/
+logs/
+data/
+coverage/
