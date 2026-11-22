@@ -50,3 +50,6 @@ clean:
 
 backup:
 	./scripts/backup.sh
+
+e2e:
+	./scripts/e2e.sh

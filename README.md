@@ -45,6 +45,14 @@ pnpm dev                           # Vite on :5173, proxies /api and /metrics
 
 `STOCKFISH_PATH=stockfish` must resolve to a UCI engine; `stockfish` on PATH is fine outside Docker.
 
+## Full end-to-end test
+
+```bash
+E2E_RESET=1 ./scripts/e2e.sh
+```
+
+This resets the local stack, imports a real public Chess.com archive serially, analyses a game, streams a reflection, solves a due puzzle through FSRS, runs an endgame sparring move and checks `/metrics`. It is destructive by design; omit `E2E_RESET=1` to keep existing volumes.
+
 ## Verification gates
 
 ```bash
@@ -78,6 +86,8 @@ All configuration is environment-driven; see `.env.example`. The important ones:
 | `STOCKFISH_WORKERS` | CPU count − 1 | Bounded pool size. |
 | `CHESSCOM_USER_AGENT` | `EloForge/1.0 (contact: …)` | Required polite identification. |
 | `COOKIE_SECURE` | `true` | Set `false` only for plain-HTTP local development. |
+| `SITE_ADDRESS` | `:80` | Set a domain (e.g. `chess.example.com`) to let Caddy issue TLS certificates automatically. |
+| `WEB_PORT` / `WEB_TLS_PORT` | `3000` / `8443` | Map `80` / `443` in production. |
 
 ## Project layout
 
@@ -85,7 +95,8 @@ All configuration is environment-driven; see `.env.example`. The important ones:
 backend/        Rust API, analyzer, engine pool, prompts, SQL migrations
 frontend/       Vite + React 19 + Tailwind v4 + chessground
 docs/           architecture, PRD, research, deployment
-scripts/        backup + operational helpers
+scripts/        backup, restore and end-to-end helpers
+frontend/qa/    Playwright smoke, flow and axe accessibility tests
 ```
 
 ## Guardrails
@@ -94,6 +105,10 @@ scripts/        backup + operational helpers
 - OpenCode Go is called only from the backend, always with `x-opencode-session` and `User-Agent: EloForge/1.0`.
 - Chess.com PubAPI requests are strictly serial with ETag caching and respectful 429 backoff.
 - Containers run as a non-root user; every user-owned query is scoped by `auth.user_id`.
+
+## Production deployment
+
+See [`docs/DEPLOY.md`](docs/DEPLOY.md) for TLS, environment, backups, monitoring, upgrades and Chess.com/OpenCode compliance.
 
 ## Disclaimer
 

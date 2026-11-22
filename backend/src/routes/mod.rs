@@ -3,6 +3,7 @@ pub mod events;
 pub mod focus;
 pub mod games;
 pub mod health;
+pub mod metrics;
 pub mod puzzles;
 pub mod reflect;
 pub mod reports;
@@ -21,6 +22,7 @@ pub fn router() -> Router<AppState> {
     let settings = notifications::settings::router();
     Router::new()
         .route("/api/healthz", get(health::healthz))
+        .route("/metrics", get(metrics::metrics))
         .route("/api/auth/chesscom/start", post(auth::start))
         .route("/api/auth/chesscom/verify", post(auth::verify))
         .route("/api/auth/chesscom/preview/{username}", get(auth::preview))

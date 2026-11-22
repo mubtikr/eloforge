@@ -29,3 +29,8 @@ backups/
 logs/
 data/
 coverage/
+
+# Playwright
+frontend/test-results
+frontend/playwright-report
+frontend/qa/.auth

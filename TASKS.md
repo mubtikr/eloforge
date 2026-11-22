@@ -47,6 +47,6 @@
 - [x] **T5.8** Execute Impeccable audit cycle: `/impeccable critique`, `/impeccable polish`, `/impeccable audit`, `/impeccable harden`, and verify `npx impeccable detect src/` passes with 0 errors.
 
 ## Phase 6: Production Hardening
-- [ ] **T6.1** Add Prometheus `/metrics` endpoint (Stockfish queue depth, avg analysis latency, OpenCode Go request latency & token usage).
-- [ ] **T6.2** Add Postgres backup script (`scripts/backup.sh`) and deployment guide (`docs/DEPLOY.md`) for VPS / Coolify Docker Compose deployment.
-- [ ] **T6.3** Run full end-to-end verification in Docker Compose (`docker compose up --build -d`) from fresh database through sync, analysis, reflection, puzzle solve, and endgame sparring.
+- [x] **T6.1** Add Prometheus `/metrics` endpoint (Stockfish queue depth, avg analysis latency, OpenCode Go request latency & token usage).
+- [x] **T6.2** Add Postgres backup script (`scripts/backup.sh`) and deployment guide (`docs/DEPLOY.md`) for VPS / Coolify Docker Compose deployment.
+- [x] **T6.3** Run full end-to-end verification in Docker Compose (`docker compose up --build -d`) from fresh database through sync, analysis, reflection, puzzle solve, and endgame sparring.

@@ -90,11 +90,17 @@ services:
         condition: service_healthy
     ports:
       - "${WEB_PORT:-3000}:80"
+      - "${WEB_TLS_PORT:-8443}:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
     networks: [backend]
 
 volumes:
   pgdata:
   valkeydata:
+  caddy_data:
+  caddy_config:
 
 networks:
   backend:
