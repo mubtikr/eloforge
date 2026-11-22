@@ -1,8 +1,13 @@
+pub mod auth;
+pub mod chess;
+pub mod chesscom;
 pub mod config;
 pub mod db;
 pub mod engine;
 pub mod error;
 pub mod events;
 pub mod metrics;
+pub mod models;
 pub mod routes;
 pub mod state;
+pub mod sync;

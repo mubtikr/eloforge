@@ -2,7 +2,15 @@ use std::{sync::Arc, time::Instant};
 
 use sqlx::PgPool;
 
-use crate::{config::Config, engine::EnginePool, events::EventBus, metrics::Metrics};
+use crate::{
+    auth::{AuthProvider, ChessComOAuthProvider},
+    chesscom::ChessComClient,
+    config::Config,
+    engine::EnginePool,
+    events::EventBus,
+    metrics::Metrics,
+    sync::SyncService,
+};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -13,6 +21,10 @@ pub struct AppState {
     pub engine: Arc<EnginePool>,
     pub metrics: Arc<Metrics>,
     pub http: reqwest::Client,
+    pub chesscom: Arc<ChessComClient>,
+    pub auth: Arc<dyn AuthProvider>,
+    pub oauth: Arc<ChessComOAuthProvider>,
+    pub sync: Arc<SyncService>,
     pub started_at: Instant,
 }
 

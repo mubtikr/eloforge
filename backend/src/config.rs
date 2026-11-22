@@ -50,6 +50,7 @@ pub struct Config {
     pub opencode_protocol: LlmProtocol,
     pub opencode_timeout_sec: u64,
     pub ai_daily_token_budget: i64,
+    pub chesscom_base_url: String,
     pub chesscom_user_agent: String,
     pub chesscom_min_interval_ms: u64,
     pub chesscom_oauth_enabled: bool,
@@ -138,6 +139,9 @@ impl Config {
             opencode_protocol,
             opencode_timeout_sec: parse_or("OPENCODE_GO_TIMEOUT_SEC", 90u64)?,
             ai_daily_token_budget: parse_or("AI_DAILY_TOKEN_BUDGET", 250_000i64)?,
+            chesscom_base_url: var_or("CHESSCOM_BASE_URL", "https://api.chess.com/pub")
+                .trim_end_matches('/')
+                .to_string(),
             chesscom_user_agent: var_or(
                 "CHESSCOM_USER_AGENT",
                 "EloForge/1.0 (contact: contact@eloforge.app)",

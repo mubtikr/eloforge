@@ -17,9 +17,9 @@ pub enum AppError {
     NotFound(String),
     #[error("rate limit exceeded: {0}")]
     RateLimited(String),
-    #[error("database error")]
+    #[error("database error: {0}")]
     Database(#[from] sqlx::Error),
-    #[error("cache error")]
+    #[error("cache error: {0}")]
     Cache(#[from] redis::RedisError),
     #[error("engine error: {0}")]
     Engine(String),

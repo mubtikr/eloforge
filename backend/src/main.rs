@@ -9,8 +9,17 @@ use axum::{
     Router,
 };
 use eloforge_api::{
-    config::Config, db, engine::EnginePool, events::EventBus, metrics::Metrics, routes,
+    auth::{AuthProvider, ChessComChallengeProvider, ChessComOAuthProvider},
+    chesscom::ChessComClient,
+    config::Config,
+    db,
+    engine::EnginePool,
+    events::EventBus,
+    metrics::Metrics,
+    models::UserDto,
+    routes,
     state::AppState,
+    sync::SyncService,
 };
 use sqlx::PgPool;
 use tokio::signal;
@@ -47,12 +56,30 @@ async fn main() -> anyhow::Result<()> {
     let redis = connect_valkey(&redis_client, 40).await?;
     tracing::info!("valkey ready");
 
+    let cfg = Arc::new(cfg);
     let metrics = Metrics::new()?;
     let engine = EnginePool::new(&cfg, metrics.clone());
     let events = EventBus::new(redis_client, redis.clone()).await;
+    let chesscom = Arc::new(ChessComClient::new(&cfg)?);
+
+    let auth: Arc<dyn AuthProvider> = Arc::new(ChessComChallengeProvider::new(
+        db.clone(),
+        chesscom.clone(),
+        redis.clone(),
+        &cfg,
+    ));
+    let oauth = Arc::new(ChessComOAuthProvider::new(&cfg));
+    let sync = SyncService::new(
+        db.clone(),
+        chesscom.clone(),
+        redis.clone(),
+        events.clone(),
+        cfg.clone(),
+        metrics.clone(),
+    );
 
     let state = AppState {
-        cfg: Arc::new(cfg.clone()),
+        cfg: cfg.clone(),
         db,
         redis,
         events,
@@ -62,8 +89,14 @@ async fn main() -> anyhow::Result<()> {
             .user_agent("EloForge/1.0")
             .timeout(Duration::from_secs(30))
             .build()?,
+        chesscom,
+        auth,
+        oauth,
+        sync,
         started_at: std::time::Instant::now(),
     };
+
+    spawn_sync_scheduler(state.clone());
 
     let app = build_app(state.clone());
 
@@ -80,6 +113,42 @@ async fn main() -> anyhow::Result<()> {
 
     tracing::info!("EloForge API stopped");
     Ok(())
+}
+
+fn spawn_sync_scheduler(state: AppState) {
+    tokio::spawn(async move {
+        let period = Duration::from_secs(state.cfg.sync_interval_minutes.max(1) * 60);
+        let mut ticker = tokio::time::interval(period);
+        ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+        ticker.tick().await;
+        loop {
+            ticker.tick().await;
+            let users = sqlx::query_as::<_, UserDto>(
+                "SELECT id, chesscom_username, display_name, country, avatar_url, title,
+                        current_elo, peak_elo, created_at
+                 FROM users ORDER BY created_at ASC LIMIT 500",
+            )
+            .fetch_all(&state.db)
+            .await;
+            match users {
+                Ok(users) => {
+                    for user in users {
+                        match state.sync.trigger(&user).await {
+                            Ok(true) => {
+                                tracing::info!(user_id = %user.id, "scheduled sync started");
+                                tokio::time::sleep(Duration::from_secs(3)).await;
+                            }
+                            Ok(false) => {}
+                            Err(err) => {
+                                tracing::warn!(error = %err, user_id = %user.id, "scheduled sync trigger failed")
+                            }
+                        }
+                    }
+                }
+                Err(err) => tracing::warn!(error = %err, "scheduled sync user query failed"),
+            }
+        }
+    });
 }
 
 fn build_app(state: AppState) -> Router {
