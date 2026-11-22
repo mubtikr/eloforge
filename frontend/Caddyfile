@@ -1,8 +1,10 @@
 {
 	admin off
+	http_port 8080
+	https_port 8443
 }
 
-{$SITE_ADDRESS::80} {
+{$SITE_ADDRESS::8080} {
 	root * /srv
 	encode zstd gzip
 

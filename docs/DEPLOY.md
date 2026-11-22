@@ -40,7 +40,7 @@ ANALYSIS_MOVETIME_FULL_MS=200
 ANALYSIS_MOVETIME_CRITICAL_MS=800
 ```
 
-`SITE_ADDRESS=chess.example.com` makes Caddy obtain and renew a certificate automatically. Caddy stores it in the `caddy_data` volume. For a local-only deployment leave `SITE_ADDRESS=:80`, `WEB_PORT=3000`, `COOKIE_SECURE=false`.
+`SITE_ADDRESS=chess.example.com` makes Caddy obtain and renew a certificate automatically. Caddy stores it in the `caddy_data` volume. For a local-only deployment leave `SITE_ADDRESS=:8080`, `WEB_PORT=3000`, `COOKIE_SECURE=false`.
 
 Start the stack:
 

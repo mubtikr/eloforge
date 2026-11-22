@@ -4,6 +4,7 @@ services:
   postgres:
     image: pgvector/pgvector:pg17
     restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-eloforge}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-eloforge}
@@ -20,6 +21,7 @@ services:
   valkey:
     image: valkey/valkey:8-alpine
     restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
     command: ["valkey-server", "--appendonly", "yes", "--save", "60", "1"]
     volumes:
       - valkeydata:/data
@@ -35,6 +37,7 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
     depends_on:
       postgres:
         condition: service_healthy
@@ -85,12 +88,15 @@ services:
       context: frontend
       dockerfile: Dockerfile
     restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
     depends_on:
       api:
         condition: service_healthy
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-:8080}
     ports:
-      - "${WEB_PORT:-3000}:80"
-      - "${WEB_TLS_PORT:-8443}:443"
+      - "${WEB_PORT:-3000}:8080"
+      - "${WEB_TLS_PORT:-8443}:8443"
     volumes:
       - caddy_data:/data
       - caddy_config:/config
