@@ -30,15 +30,37 @@ export type GameSummary = { id: string, url: string | null, white_username: stri
 
 export type GamesQuery = { limit: number | null, offset: number | null, status: string | null, result: string | null, };
 
+export type GoalCreateRequest = { title: string, description: string | null, target_elo: number | null, target_date: string | null, };
+
+export type GoalDto = { id: string, kind: string, stage: number | null, title: string, description: string | null, target_elo: number | null, target_date: string | null, progress: unknown, completed: boolean, created_at: string, };
+
 export type HourAccuracy = { hour: number, games: number, accuracy: number, win_rate: number, };
 
 export type MoveDto = { id: number, ply: number, move_number: number, color: string, san: string, uci: string, fen_before: string, fen_after: string, clock_remaining_sec: number | null, time_spent_sec: number | null, eval_before_cp: number | null, eval_after_cp: number | null, eval_mate: number | null, win_prob_user: number | null, best_move_uci: string | null, best_move_san: string | null, epl: number | null, classification: string | null, mistake_tags: Array<string>, pv: unknown | null, };
+
+export type NotificationDelivery = { channel: string, ok: boolean, detail: string, };
+
+export type NotificationSettingsDto = { user_id: string, telegram_chat_id: string | null, email: string | null, web_push_subscription: unknown | null, daily_reminder: boolean, tilt_alerts: boolean, reminder_hour: number, timezone: string, };
+
+export type NotificationSettingsUpdate = { telegram_chat_id: string | null, email: string | null, web_push_subscription: unknown | null, daily_reminder: boolean, tilt_alerts: boolean, reminder_hour: number, timezone: string, };
 
 export type OpeningReport = { white: Array<OpeningStat>, black: Array<OpeningStat>, recommendations: Array<string>, };
 
 export type OpeningStat = { eco: string, name: string, color: string, games: number, wins: number, draws: number, losses: number, win_rate: number, accuracy: number, out_of_book_move: number, most_punished: boolean, };
 
 export type ProfilePreview = { username: string, name: string | null, avatar: string | null, title: string | null, country: string | null, url: string | null, rapid_rating: number | null, blitz_rating: number | null, bullet_rating: number | null, rapid_games: number | null, };
+
+export type PuzzleAttemptRequest = { uci: string, hints: number, elapsed_ms: bigint | null, rating: number | null, };
+
+export type PuzzleAttemptResult = { correct: boolean, solution_uci: string, solution_san: string | null, rating: number, interval_days: number, due_at: string, stability: number, state: string, mastered: boolean, };
+
+export type PuzzleDto = { id: string, game_id: string | null, move_id: bigint | null, kind: string, fen: string, solution_uci: string, solution_san: string | null, best_line: unknown | null, tags: Array<string>, epl: number | null, due_at: string, stability: number, difficulty: number, reps: number, lapses: number, state: string, mastered: boolean, white_username: string | null, black_username: string | null, result: string | null, };
+
+export type PuzzleList = { items: Array<PuzzleDto>, total: number, limit: number, offset: number, };
+
+export type PuzzleQuery = { limit: number | null, offset: number | null, kind: string | null, mastered: boolean | null, };
+
+export type PuzzleStats = { due: number, total: number, mastered: number, blunder_fix: number, endgame_conversion: number, };
 
 export type RatingLeak = { tag: string, label: string, count: number, avg_epl: number, estimated_elo_cost: number, trend: string, advice: string, };
 
@@ -58,7 +80,21 @@ export type RoadmapReport = { current_elo: number | null, next_target: number | 
 
 export type RoadmapStage = { stage: number, target_elo: number, title: string, description: string, criteria: Array<string>, completed: boolean, current: boolean, };
 
+export type RoadmapStageView = { stage: number, target_elo: number, title: string, description: string, criteria: Array<string>, completed: boolean, current: boolean, progress: unknown, };
+
+export type RoadmapView = { current_elo: number | null, next_target: number | null, progress_pct: number, metrics: unknown, stages: Array<RoadmapStageView>, };
+
 export type SessionIndexRate = { index: number, games: number, win_rate: number, accuracy: number, };
+
+export type SparringMoveDto = { move_number: number, color: string, san: string, uci: string, fen_after: string, };
+
+export type SparringMoveRequest = { uci: string, };
+
+export type SparringMoveResponse = { session: SparringSessionDto, user_move: SparringMoveDto, engine_move: SparringMoveDto | null, status: string, message: string, };
+
+export type SparringSessionDto = { id: string, game_id: string | null, puzzle_id: string | null, fen: string, initial_fen: string, user_color: string, enemy_elo: number | null, status: string, result: string | null, moves: Array<SparringMoveDto>, created_at: string, updated_at: string, };
+
+export type SparringStartRequest = { puzzle_id: string | null, game_id: string | null, };
 
 export type StartChallengeRequest = { username: string, };
 
@@ -69,6 +105,8 @@ export type SyncTriggerResponse = { accepted: boolean, message: string, };
 export type TagCount = { tag: string, label: string, count: number, };
 
 export type UserDto = { id: string, chesscom_username: string, display_name: string | null, country: string | null, avatar_url: string | null, title: string | null, current_elo: number | null, peak_elo: number | null, created_at: string, };
+
+export type VapidKeyResponse = { public_key: string | null, };
 
 export type VerifyChallengeRequest = { challenge_id: string, };
 

@@ -214,6 +214,9 @@ impl AuthProvider for ChessComChallengeProvider {
 
         let stats = self.client.fetch_stats(&profile.username).await.ok();
         let user = self.upsert_user(&profile, stats.as_ref()).await?;
+        if let Err(err) = crate::goals::ladder::seed_roadmap(&self.db, user.id).await {
+            tracing::warn!(error = %err, "could not seed roadmap milestones");
+        }
         let token = issue_token(&user, &self.jwt_secret)?;
 
         sqlx::query("UPDATE auth_challenges SET verified_at = now(), user_id = $2 WHERE id = $1")

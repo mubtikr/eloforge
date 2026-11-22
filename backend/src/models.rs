@@ -211,6 +211,226 @@ pub struct AnalyzeResponse {
     pub message: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow, TS)]
+#[ts(export, export_to = EXPORT)]
+pub struct PuzzleDto {
+    pub id: Uuid,
+    pub game_id: Option<Uuid>,
+    pub move_id: Option<i64>,
+    pub kind: String,
+    pub fen: String,
+    pub solution_uci: String,
+    pub solution_san: Option<String>,
+    #[ts(type = "unknown | null")]
+    pub best_line: Option<serde_json::Value>,
+    pub tags: Vec<String>,
+    pub epl: Option<f64>,
+    pub due_at: DateTime<Utc>,
+    pub stability: f64,
+    pub difficulty: f64,
+    pub reps: i32,
+    pub lapses: i32,
+    pub state: String,
+    pub mastered: bool,
+    pub white_username: Option<String>,
+    pub black_username: Option<String>,
+    pub result: Option<String>,
+}
+
+#[derive(Debug, Deserialize, TS)]
+#[ts(export, export_to = EXPORT)]
+pub struct PuzzleAttemptRequest {
+    pub uci: String,
+    #[serde(default)]
+    pub hints: i32,
+    pub elapsed_ms: Option<i64>,
+    pub rating: Option<u8>,
+}
+
+#[derive(Debug, Serialize, Deserialize, TS)]
+#[ts(export, export_to = EXPORT)]
+pub struct PuzzleAttemptResult {
+    pub correct: bool,
+    pub solution_uci: String,
+    pub solution_san: Option<String>,
+    pub rating: u8,
+    pub interval_days: f64,
+    pub due_at: DateTime<Utc>,
+    pub stability: f64,
+    pub state: String,
+    pub mastered: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize, TS)]
+#[ts(export, export_to = EXPORT)]
+pub struct PuzzleStats {
+    pub due: i32,
+    pub total: i32,
+    pub mastered: i32,
+    pub blunder_fix: i32,
+    pub endgame_conversion: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize, TS)]
+#[ts(export, export_to = EXPORT)]
+pub struct PuzzleList {
+    pub items: Vec<PuzzleDto>,
+    pub total: i32,
+    pub limit: i32,
+    pub offset: i32,
+}
+
+#[derive(Debug, Deserialize, TS)]
+#[ts(export, export_to = EXPORT)]
+pub struct PuzzleQuery {
+    pub limit: Option<i32>,
+    pub offset: Option<i32>,
+    pub kind: Option<String>,
+    #[serde(default)]
+    pub mastered: Option<bool>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export, export_to = EXPORT)]
+pub struct SparringMoveDto {
+    pub move_number: i32,
+    pub color: String,
+    pub san: String,
+    pub uci: String,
+    pub fen_after: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export, export_to = EXPORT)]
+pub struct SparringSessionDto {
+    pub id: Uuid,
+    pub game_id: Option<Uuid>,
+    pub puzzle_id: Option<Uuid>,
+    pub fen: String,
+    pub initial_fen: String,
+    pub user_color: String,
+    pub enemy_elo: Option<i32>,
+    pub status: String,
+    pub result: Option<String>,
+    pub moves: Vec<SparringMoveDto>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Deserialize, TS)]
+#[ts(export, export_to = EXPORT)]
+pub struct SparringStartRequest {
+    pub puzzle_id: Option<Uuid>,
+    pub game_id: Option<Uuid>,
+}
+
+#[derive(Debug, Deserialize, TS)]
+#[ts(export, export_to = EXPORT)]
+pub struct SparringMoveRequest {
+    pub uci: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, TS)]
+#[ts(export, export_to = EXPORT)]
+pub struct SparringMoveResponse {
+    pub session: SparringSessionDto,
+    pub user_move: SparringMoveDto,
+    pub engine_move: Option<SparringMoveDto>,
+    pub status: String,
+    pub message: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow, TS)]
+#[ts(export, export_to = EXPORT)]
+pub struct GoalDto {
+    pub id: Uuid,
+    pub kind: String,
+    pub stage: Option<i32>,
+    pub title: String,
+    pub description: Option<String>,
+    pub target_elo: Option<i32>,
+    pub target_date: Option<chrono::NaiveDate>,
+    #[ts(type = "unknown")]
+    pub progress: serde_json::Value,
+    pub completed: bool,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Deserialize, TS)]
+#[ts(export, export_to = EXPORT)]
+pub struct GoalCreateRequest {
+    pub title: String,
+    pub description: Option<String>,
+    pub target_elo: Option<i32>,
+    pub target_date: Option<chrono::NaiveDate>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export, export_to = EXPORT)]
+pub struct RoadmapStageView {
+    pub stage: i32,
+    pub target_elo: i32,
+    pub title: String,
+    pub description: String,
+    pub criteria: Vec<String>,
+    pub completed: bool,
+    pub current: bool,
+    #[ts(type = "unknown")]
+    pub progress: serde_json::Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export, export_to = EXPORT)]
+pub struct RoadmapView {
+    pub current_elo: Option<i32>,
+    pub next_target: Option<i32>,
+    pub progress_pct: f64,
+    #[ts(type = "unknown")]
+    pub metrics: serde_json::Value,
+    pub stages: Vec<RoadmapStageView>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export, export_to = EXPORT)]
+pub struct NotificationSettingsDto {
+    pub user_id: Uuid,
+    pub telegram_chat_id: Option<String>,
+    pub email: Option<String>,
+    #[ts(type = "unknown | null")]
+    pub web_push_subscription: Option<serde_json::Value>,
+    pub daily_reminder: bool,
+    pub tilt_alerts: bool,
+    pub reminder_hour: i32,
+    pub timezone: String,
+}
+
+#[derive(Debug, Deserialize, TS)]
+#[ts(export, export_to = EXPORT)]
+pub struct NotificationSettingsUpdate {
+    pub telegram_chat_id: Option<String>,
+    pub email: Option<String>,
+    #[ts(type = "unknown | null")]
+    pub web_push_subscription: Option<serde_json::Value>,
+    pub daily_reminder: bool,
+    pub tilt_alerts: bool,
+    pub reminder_hour: i32,
+    pub timezone: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, TS)]
+#[ts(export, export_to = EXPORT)]
+pub struct VapidKeyResponse {
+    pub public_key: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, TS)]
+#[ts(export, export_to = EXPORT)]
+pub struct NotificationDelivery {
+    pub channel: String,
+    pub ok: bool,
+    pub detail: String,
+}
+
 #[derive(Debug, Serialize, Deserialize, TS)]
 #[ts(export, export_to = EXPORT)]
 pub struct SyncTriggerResponse {

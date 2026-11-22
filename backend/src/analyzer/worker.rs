@@ -136,6 +136,19 @@ async fn run_job(state: &AppState, job: AnalysisJob) {
     .await
     {
         Ok(outcome) => {
+            let created = crate::training::extract_puzzles_for_game(
+                &state.db,
+                &state.metrics,
+                job.user_id,
+                job.game_id,
+            )
+            .await
+            .unwrap_or_else(|err| {
+                tracing::warn!(error = %err, "puzzle extraction failed");
+                0
+            });
+            let _ = crate::goals::ladder::recompute_roadmap(&state.db, job.user_id).await;
+
             state
                 .events
                 .publish(AppEvent::new(
@@ -148,6 +161,7 @@ async fn run_job(state: &AppState, job: AnalysisJob) {
                         "accuracy_user": outcome.accuracy_user,
                         "blunders": outcome.blunders,
                         "mistakes": outcome.mistakes,
+                        "puzzles_created": created,
                     }),
                 ))
                 .await;

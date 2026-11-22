@@ -100,6 +100,7 @@ async fn main() -> anyhow::Result<()> {
     };
 
     eloforge_api::analyzer::spawn_workers(state.clone(), 1);
+    eloforge_api::notifications::spawn_worker(state.clone());
     spawn_sync_scheduler(state.clone());
 
     let app = build_app(state.clone());

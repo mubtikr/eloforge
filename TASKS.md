@@ -30,11 +30,11 @@
 - [x] **T3.4** Implement `POST /api/reports/weekly/generate` and `GET /api/reports/*` endpoints covering all 8 reports in `PRD.md`.
 
 ## Phase 4: Mistake Puzzles, Endgame Sparring & Road-to-GM Engine
-- [ ] **T4.1** Build `backend/src/training/puzzle_extractor.rs`: auto-create `blunder_fix` puzzles from every user blunder (`EPL >= 0.15`) and `endgame_conversion` drills from every `WINNING_GAME_THROWN` / `ENDGAME_TECHNIQUE_FAIL`.
-- [ ] **T4.2** Implement FSRS spaced-repetition scheduler (`GET /api/puzzles/due`, `POST /api/puzzles/{id}/attempt`).
-- [ ] **T4.3** Implement Endgame Sparring API (`POST /api/sparring/move`): accepts user move on a failed endgame FEN, validates via `shakmaty`, returns rating-calibrated Stockfish reply (`UCI_LimitStrength` + `UCI_Elo`), and marks drill mastered when checkmate/decisive promotion is achieved.
-- [ ] **T4.4** Implement Road-to-GM Milestone Engine (`backend/src/goals/ladder.rs`): seed Tiers 1–8 (500 → 650 → 800 → 1000 → 1200 → 1500 → 1800 → 2200 → 2500), auto-recompute progress after every analyzed game, and expose `GET /api/roadmap`.
-- [ ] **T4.5** Implement Goal & Reminder Worker (`backend/src/notifications/`): cron runner sending daily study nudges, streak alerts, and tilt warnings via Telegram Bot Webhook, SMTP email, or Web Push.
+- [x] **T4.1** Build `backend/src/training/puzzle_extractor.rs`: auto-create `blunder_fix` puzzles from every user blunder (`EPL >= 0.15`) and `endgame_conversion` drills from every `WINNING_GAME_THROWN` / `ENDGAME_TECHNIQUE_FAIL`.
+- [x] **T4.2** Implement FSRS spaced-repetition scheduler (`GET /api/puzzles/due`, `POST /api/puzzles/{id}/attempt`).
+- [x] **T4.3** Implement Endgame Sparring API (`POST /api/sparring/move`): accepts user move on a failed endgame FEN, validates via `shakmaty`, returns rating-calibrated Stockfish reply (`UCI_LimitStrength` + `UCI_Elo`), and marks drill mastered when checkmate/decisive promotion is achieved.
+- [x] **T4.4** Implement Road-to-GM Milestone Engine (`backend/src/goals/ladder.rs`): seed Tiers 1–8 (500 → 650 → 800 → 1000 → 1200 → 1500 → 1800 → 2200 → 2500), auto-recompute progress after every analyzed game, and expose `GET /api/roadmap`.
+- [x] **T4.5** Implement Goal & Reminder Worker (`backend/src/notifications/`): cron runner sending daily study nudges, streak alerts, and tilt warnings via Telegram Bot Webhook, SMTP email, or Web Push.
 
 ## Phase 5: Frontend Application & Impeccable Design Pass
 - [ ] **T5.1** Build Auth / Onboarding view: "Connect Chess.com" flow with verification code copy button, live check, and non-affiliation footer.

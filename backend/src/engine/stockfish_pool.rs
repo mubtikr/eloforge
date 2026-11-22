@@ -43,6 +43,11 @@ impl EngineQuery {
         self.uci_elo = Some(elo.clamp(1320, 3190));
         self
     }
+
+    pub fn with_movetime(mut self, ms: u64) -> Self {
+        self.movetime_ms = Some(ms.clamp(50, 30_000));
+        self
+    }
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

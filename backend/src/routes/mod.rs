@@ -3,8 +3,11 @@ pub mod events;
 pub mod focus;
 pub mod games;
 pub mod health;
+pub mod puzzles;
 pub mod reflect;
 pub mod reports;
+pub mod roadmap;
+pub mod sparring;
 pub mod sync;
 
 use axum::{
@@ -12,9 +15,10 @@ use axum::{
     Router,
 };
 
-use crate::state::AppState;
+use crate::{notifications, state::AppState};
 
 pub fn router() -> Router<AppState> {
+    let settings = notifications::settings::router();
     Router::new()
         .route("/api/healthz", get(health::healthz))
         .route("/api/auth/chesscom/start", post(auth::start))
@@ -36,6 +40,18 @@ pub fn router() -> Router<AppState> {
         .route("/api/sync/status", get(sync::status))
         .route("/api/events/stream", get(events::stream))
         .route("/api/focus", get(focus::report))
+        .route("/api/puzzles/due", get(puzzles::due))
+        .route("/api/puzzles", get(puzzles::list))
+        .route("/api/puzzles/stats", get(puzzles::stats))
+        .route("/api/puzzles/{id}/attempt", post(puzzles::attempt))
+        .route("/api/roadmap", get(roadmap::roadmap))
+        .route("/api/goals", get(roadmap::list_goals))
+        .route("/api/goals", post(roadmap::create_goal))
+        .route("/api/goals/{id}/complete", post(roadmap::complete_goal))
+        .route("/api/sparring/start", post(sparring::start))
+        .route("/api/sparring", get(sparring::list))
+        .route("/api/sparring/{id}", get(sparring::get))
+        .route("/api/sparring/{id}/move", post(sparring::make_move))
         .route("/api/reports", get(reports::list))
         .route("/api/reports/openings", get(reports::openings))
         .route("/api/reports/weaknesses", get(reports::weaknesses))
@@ -53,4 +69,5 @@ pub fn router() -> Router<AppState> {
             "/api/reports/curriculum/generate",
             post(reports::curriculum_generate),
         )
+        .merge(settings)
 }
