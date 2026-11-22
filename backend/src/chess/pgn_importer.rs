@@ -308,7 +308,7 @@ pub fn parse_pgn(pgn: &str, username: &str) -> Result<ParsedGame, String> {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ImportOutcome {
-    Imported,
+    Imported(Uuid),
     Skipped,
 }
 
@@ -375,7 +375,7 @@ pub async fn import_game(
         .execute(pool)
         .await?;
         insert_moves(pool, existing_id, &parsed.moves).await?;
-        return Ok(ImportOutcome::Imported);
+        return Ok(ImportOutcome::Imported(existing_id));
     }
 
     let start_time = parsed
@@ -435,7 +435,7 @@ pub async fn import_game(
     .await?;
 
     insert_moves(pool, id, &parsed.moves).await?;
-    Ok(ImportOutcome::Imported)
+    Ok(ImportOutcome::Imported(id))
 }
 
 async fn insert_moves(pool: &PgPool, game_id: Uuid, moves: &[ImportedMove]) -> AppResult<()> {

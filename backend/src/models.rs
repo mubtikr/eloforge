@@ -181,6 +181,13 @@ pub struct GamePage {
 
 #[derive(Debug, Serialize, Deserialize, TS)]
 #[ts(export, export_to = EXPORT)]
+pub struct AnalyzeResponse {
+    pub queued: bool,
+    pub message: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, TS)]
+#[ts(export, export_to = EXPORT)]
 pub struct SyncTriggerResponse {
     pub accepted: bool,
     pub message: String,

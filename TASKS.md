@@ -15,13 +15,13 @@
 - [x] **T1.5** Expose `POST /api/sync/trigger` and `GET /api/events/stream` (SSE) streaming live sync & analysis progress events via Valkey Pub/Sub.
 
 ## Phase 2: Stockfish Worker Pool & Deterministic Analysis
-- [ ] **T2.1** Build `backend/src/engine/stockfish_pool.rs`: persistent UCI process pool bounded by `STOCKFISH_WORKERS`, configurable `Hash`, per-query timeout, and automatic crash respawn.
-- [ ] **T2.2** Bundle Lichess ECO opening TSV (`backend/assets/eco.tsv`) and implement `backend/src/chess/openings.rs` to tag ECO code, opening name, last book ply, and opening-principle violations (uncastled past move 12, repeated piece moves, early queen sorties).
-- [ ] **T2.3** Build `backend/src/analyzer/game_analyzer.rs`: 2-pass Stockfish analysis (depth 14 full game -> depth 20 MultiPV=3 on turning points where `EPL >= 0.10`), Win% curve, Accuracy % (overall + per phase), and max advantage tracking.
-- [ ] **T2.4** Build `backend/src/analyzer/mistake_tagger.rs` using `shakmaty` + Stockfish PV to deterministically assign `HANGING_PIECE`, `MISSED_FREE_PIECE`, `MISSED_MATE_1_2`, `ALLOWED_MATE`, `TACTICAL_BLINDNESS`, `WINNING_GAME_THROWN`, `STALEMATE_THROW`, `ENDGAME_TECHNIQUE_FAIL`, `IMPULSIVE_BLUNDER`, and `TIME_SCRAMBLE_BLUNDER`.
-- [ ] **T2.5** Build `backend/src/analyzer/focus_tilt.rs` computing Impulsivity Index, Post-Blunder Cascade rate, Session Tilt drop-off, and Hour-of-Day accuracy heatmap.
-- [ ] **T2.6** Wire background analysis worker consuming Valkey job queue and updating `games.analysis_status` + emitting SSE progress events.
-- [ ] **T2.7** Write unit & integration tests validating move classification, blunder tagging, and clock parsing against sample 500-Elo Rapid PGNs.
+- [x] **T2.1** Build `backend/src/engine/stockfish_pool.rs`: persistent UCI process pool bounded by `STOCKFISH_WORKERS`, configurable `Hash`, per-query timeout, and automatic crash respawn.
+- [x] **T2.2** Bundle Lichess ECO opening TSV (`backend/assets/eco.tsv`) and implement `backend/src/chess/openings.rs` to tag ECO code, opening name, last book ply, and opening-principle violations (uncastled past move 12, repeated piece moves, early queen sorties).
+- [x] **T2.3** Build `backend/src/analyzer/game_analyzer.rs`: 2-pass Stockfish analysis (depth 14 full game -> depth 20 MultiPV=3 on turning points where `EPL >= 0.10`), Win% curve, Accuracy % (overall + per phase), and max advantage tracking.
+- [x] **T2.4** Build `backend/src/analyzer/mistake_tagger.rs` using `shakmaty` + Stockfish PV to deterministically assign `HANGING_PIECE`, `MISSED_FREE_PIECE`, `MISSED_MATE_1_2`, `ALLOWED_MATE`, `TACTICAL_BLINDNESS`, `WINNING_GAME_THROWN`, `STALEMATE_THROW`, `ENDGAME_TECHNIQUE_FAIL`, `IMPULSIVE_BLUNDER`, and `TIME_SCRAMBLE_BLUNDER`.
+- [x] **T2.5** Build `backend/src/analyzer/focus_tilt.rs` computing Impulsivity Index, Post-Blunder Cascade rate, Session Tilt drop-off, and Hour-of-Day accuracy heatmap.
+- [x] **T2.6** Wire background analysis worker consuming Valkey job queue and updating `games.analysis_status` + emitting SSE progress events.
+- [x] **T2.7** Write unit & integration tests validating move classification, blunder tagging, and clock parsing against sample 500-Elo Rapid PGNs.
 
 ## Phase 3: OpenCode Go AI Coach & Reflection Memory
 - [ ] **T3.1** Build `backend/src/ai/provider.rs` (`LlmProvider` trait) and `backend/src/ai/opencode_go.rs` supporting `https://opencode.ai/zen/go/v1`, custom `User-Agent`, mandatory `x-opencode-session` UUID header, protocol routing (`chat` / `messages` / `responses`), UTF-8 SSE streaming, and 502/503/529 retries.

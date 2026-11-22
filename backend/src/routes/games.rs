@@ -9,7 +9,9 @@ use uuid::Uuid;
 use crate::{
     auth::AuthUser,
     error::{AppError, AppResult},
-    models::{GameDetail, GamePage, GameSummary, GamesQuery, MoveDto, ReflectionDto},
+    models::{
+        AnalyzeResponse, GameDetail, GamePage, GameSummary, GamesQuery, MoveDto, ReflectionDto,
+    },
     state::AppState,
 };
 
@@ -123,6 +125,32 @@ struct GameExtras {
     accuracy_black: Option<f64>,
     eval_peak: Option<f64>,
     analysis: Option<serde_json::Value>,
+}
+
+pub async fn analyze(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(game_id): Path<Uuid>,
+) -> AppResult<Json<AnalyzeResponse>> {
+    let owned: Option<Uuid> =
+        sqlx::query_scalar("SELECT id FROM games WHERE id = $1 AND user_id = $2")
+            .bind(game_id)
+            .bind(auth.id)
+            .fetch_optional(&state.db)
+            .await?;
+    owned.ok_or_else(|| AppError::not_found("Game not found."))?;
+
+    let mut redis = state.redis.clone();
+    let queued = crate::analyzer::enqueue_game(&state.db, &mut redis, game_id, auth.id).await?;
+
+    Ok(Json(AnalyzeResponse {
+        queued,
+        message: if queued {
+            "Queued for Stockfish analysis.".into()
+        } else {
+            "This game is already analyzed or in progress.".into()
+        },
+    }))
 }
 
 pub async fn pgn(

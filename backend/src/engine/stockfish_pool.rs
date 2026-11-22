@@ -76,6 +76,7 @@ type Job = (EngineQuery, oneshot::Sender<Result<EngineEval, String>>);
 pub struct EnginePool {
     tx: Sender<Job>,
     workers: usize,
+    threads: usize,
     timeout: Duration,
     metrics: Arc<Metrics>,
     generation: AtomicUsize,
@@ -85,6 +86,7 @@ impl std::fmt::Debug for EnginePool {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("EnginePool")
             .field("workers", &self.workers)
+            .field("threads", &self.threads)
             .field("queue_depth", &self.tx.len())
             .finish()
     }
@@ -93,6 +95,7 @@ impl std::fmt::Debug for EnginePool {
 impl EnginePool {
     pub fn new(cfg: &Config, metrics: Arc<Metrics>) -> Arc<Self> {
         let workers = cfg.stockfish_workers.max(1);
+        let threads = cfg.stockfish_threads.max(1);
         let (tx, rx) = bounded::<Job>(workers * 8);
         let timeout = Duration::from_millis(cfg.stockfish_timeout_ms.clamp(500, 30_000));
 
@@ -104,13 +107,14 @@ impl EnginePool {
             let hash = cfg.stockfish_hash_mb;
             let metrics = metrics.clone();
             tokio::spawn(async move {
-                worker_loop(path, hash, timeout, rx, metrics).await;
+                worker_loop(path, hash, threads, timeout, rx, metrics).await;
             });
         }
 
         Arc::new(Self {
             tx,
             workers,
+            threads,
             timeout,
             metrics,
             generation: AtomicUsize::new(0),
@@ -171,7 +175,7 @@ struct EngineProcess {
 }
 
 impl EngineProcess {
-    async fn spawn(path: &str, hash_mb: u32) -> anyhow::Result<Self> {
+    async fn spawn(path: &str, hash_mb: u32, threads: usize) -> anyhow::Result<Self> {
         let mut child = Command::new(path)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
@@ -194,7 +198,8 @@ impl EngineProcess {
         proc.wait_for(&["uciok"]).await?;
         proc.write(&format!("setoption name Hash value {hash_mb}"))
             .await?;
-        proc.write("setoption name Threads value 1").await?;
+        proc.write(&format!("setoption name Threads value {}", threads.max(1)))
+            .await?;
         proc.write("isready").await?;
         proc.wait_for(&["readyok"]).await?;
         Ok(proc)
@@ -385,6 +390,7 @@ fn parse_info(line: &str) -> Option<ParsedInfo> {
 async fn worker_loop(
     path: String,
     hash_mb: u32,
+    threads: usize,
     query_timeout: Duration,
     rx: Receiver<Job>,
     metrics: Arc<Metrics>,
@@ -393,7 +399,7 @@ async fn worker_loop(
 
     while let Ok((query, reply)) = rx.recv().await {
         if proc.is_none() {
-            match EngineProcess::spawn(&path, hash_mb).await {
+            match EngineProcess::spawn(&path, hash_mb, threads).await {
                 Ok(p) => proc = Some(p),
                 Err(err) => {
                     metrics.stockfish_errors.inc();

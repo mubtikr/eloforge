@@ -1,5 +1,6 @@
 pub mod auth;
 pub mod events;
+pub mod focus;
 pub mod games;
 pub mod health;
 pub mod sync;
@@ -24,7 +25,9 @@ pub fn router() -> Router<AppState> {
         .route("/api/games", get(games::list))
         .route("/api/games/{id}", get(games::detail))
         .route("/api/games/{id}/pgn", get(games::pgn))
+        .route("/api/games/{id}/analyze", post(games::analyze))
         .route("/api/sync/trigger", post(sync::trigger))
         .route("/api/sync/status", get(sync::status))
         .route("/api/events/stream", get(events::stream))
+        .route("/api/focus", get(focus::report))
 }

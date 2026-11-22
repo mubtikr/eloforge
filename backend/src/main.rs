@@ -96,6 +96,7 @@ async fn main() -> anyhow::Result<()> {
         started_at: std::time::Instant::now(),
     };
 
+    eloforge_api::analyzer::spawn_workers(state.clone(), 1);
     spawn_sync_scheduler(state.clone());
 
     let app = build_app(state.clone());

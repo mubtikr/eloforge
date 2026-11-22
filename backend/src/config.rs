@@ -41,9 +41,12 @@ pub struct Config {
     pub stockfish_path: String,
     pub stockfish_workers: usize,
     pub stockfish_hash_mb: u32,
+    pub stockfish_threads: usize,
     pub stockfish_timeout_ms: u64,
     pub analysis_depth_full: u8,
     pub analysis_depth_critical: u8,
+    pub analysis_movetime_full_ms: u64,
+    pub analysis_movetime_critical_ms: u64,
     pub opencode_api_key: Option<String>,
     pub opencode_base_url: String,
     pub opencode_model: String,
@@ -128,9 +131,18 @@ impl Config {
             stockfish_path: var_or("STOCKFISH_PATH", "stockfish"),
             stockfish_workers: parse_or("STOCKFISH_WORKERS", default_workers)?.max(1),
             stockfish_hash_mb: parse_or("STOCKFISH_HASH_MB", 128u32)?,
+            stockfish_threads: {
+                let workers = parse_or("STOCKFISH_WORKERS", default_workers)?.max(1);
+                let cores = std::thread::available_parallelism()
+                    .map(|n| n.get())
+                    .unwrap_or(2);
+                parse_or("STOCKFISH_THREADS", (cores / workers).clamp(1, 4))?
+            },
             stockfish_timeout_ms: parse_or("STOCKFISH_TIMEOUT_MS", 5000u64)?,
             analysis_depth_full: parse_or("ANALYSIS_DEPTH_FULL", 14u8)?,
             analysis_depth_critical: parse_or("ANALYSIS_DEPTH_CRITICAL", 20u8)?,
+            analysis_movetime_full_ms: parse_or("ANALYSIS_MOVETIME_FULL_MS", 160u64)?,
+            analysis_movetime_critical_ms: parse_or("ANALYSIS_MOVETIME_CRITICAL_MS", 600u64)?,
             opencode_api_key: opt("OPENCODE_API_KEY"),
             opencode_base_url: var_or("OPENCODE_GO_BASE_URL", "https://opencode.ai/zen/go/v1")
                 .trim_end_matches('/')

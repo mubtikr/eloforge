@@ -1,3 +1,4 @@
+pub mod analyzer;
 pub mod auth;
 pub mod chess;
 pub mod chesscom;

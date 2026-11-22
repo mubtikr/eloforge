@@ -191,10 +191,20 @@ impl SyncService {
                     continue;
                 }
                 match import_game(&self.db, user.id, &user.chesscom_username, game).await {
-                    Ok(ImportOutcome::Imported) => {
+                    Ok(ImportOutcome::Imported(game_id)) => {
                         imported += 1;
                         month_imported += 1;
                         self.metrics.sync_games.inc();
+                        if let Err(err) = crate::analyzer::enqueue_game(
+                            &self.db,
+                            &mut self.redis.clone(),
+                            game_id,
+                            user.id,
+                        )
+                        .await
+                        {
+                            tracing::warn!(error = %err, "could not queue analysis");
+                        }
                         self.events
                             .publish(AppEvent::new(
                                 user.id,
