@@ -67,10 +67,18 @@ pub async fn detail(
     auth: AuthUser,
     Path(game_id): Path<Uuid>,
 ) -> AppResult<Json<GameDetail>> {
+    Ok(Json(load_game_detail(&state, auth.id, game_id).await?))
+}
+
+pub async fn load_game_detail(
+    state: &AppState,
+    user_id: Uuid,
+    game_id: Uuid,
+) -> AppResult<GameDetail> {
     let sql = format!("SELECT {GAME_COLUMNS} FROM games WHERE id = $1 AND user_id = $2");
     let game = sqlx::query_as::<_, GameSummary>(&sql)
         .bind(game_id)
-        .bind(auth.id)
+        .bind(user_id)
         .fetch_optional(&state.db)
         .await?
         .ok_or_else(|| AppError::not_found("Game not found."))?;
@@ -80,7 +88,7 @@ pub async fn detail(
          FROM games WHERE id = $1 AND user_id = $2",
     )
     .bind(game_id)
-    .bind(auth.id)
+    .bind(user_id)
     .fetch_one(&state.db)
     .await?;
 
@@ -102,11 +110,11 @@ pub async fn detail(
          ORDER BY created_at DESC",
     )
     .bind(game_id)
-    .bind(auth.id)
+    .bind(user_id)
     .fetch_all(&state.db)
     .await?;
 
-    Ok(Json(GameDetail {
+    Ok(GameDetail {
         game,
         initial_fen: extras.initial_fen,
         accuracy_white: extras.accuracy_white,
@@ -115,7 +123,7 @@ pub async fn detail(
         analysis: extras.analysis,
         moves,
         reflections,
-    }))
+    })
 }
 
 #[derive(sqlx::FromRow)]

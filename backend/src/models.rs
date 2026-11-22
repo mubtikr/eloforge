@@ -179,6 +179,31 @@ pub struct GamePage {
     pub offset: i32,
 }
 
+#[derive(Debug, Deserialize, TS)]
+#[ts(export, export_to = EXPORT)]
+pub struct ReflectRequest {
+    pub reason_tags: Vec<String>,
+    pub explanation: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, TS)]
+#[ts(export, export_to = EXPORT)]
+pub struct ReflectMeta {
+    pub reflection_id: Uuid,
+    pub session_id: Uuid,
+    pub model: String,
+    pub ai_configured: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize, TS)]
+#[ts(export, export_to = EXPORT)]
+pub struct ReflectDone {
+    pub reflection_id: Uuid,
+    pub next_time_rule: String,
+    pub ai_status: String,
+    pub model: String,
+}
+
 #[derive(Debug, Serialize, Deserialize, TS)]
 #[ts(export, export_to = EXPORT)]
 pub struct AnalyzeResponse {

@@ -3,6 +3,7 @@ use std::{sync::Arc, time::Instant};
 use sqlx::PgPool;
 
 use crate::{
+    ai::AiService,
     auth::{AuthProvider, ChessComOAuthProvider},
     chesscom::ChessComClient,
     config::Config,
@@ -25,6 +26,7 @@ pub struct AppState {
     pub auth: Arc<dyn AuthProvider>,
     pub oauth: Arc<ChessComOAuthProvider>,
     pub sync: Arc<SyncService>,
+    pub ai: Arc<AiService>,
     pub started_at: Instant,
 }
 

@@ -9,6 +9,7 @@ use axum::{
     Router,
 };
 use eloforge_api::{
+    ai::AiService,
     auth::{AuthProvider, ChessComChallengeProvider, ChessComOAuthProvider},
     chesscom::ChessComClient,
     config::Config,
@@ -77,6 +78,7 @@ async fn main() -> anyhow::Result<()> {
         cfg.clone(),
         metrics.clone(),
     );
+    let ai = AiService::new(db.clone(), &cfg, metrics.clone())?;
 
     let state = AppState {
         cfg: cfg.clone(),
@@ -93,6 +95,7 @@ async fn main() -> anyhow::Result<()> {
         auth,
         oauth,
         sync,
+        ai,
         started_at: std::time::Instant::now(),
     };
 

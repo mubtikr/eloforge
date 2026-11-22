@@ -1,3 +1,4 @@
+pub mod ai;
 pub mod analyzer;
 pub mod auth;
 pub mod chess;
@@ -9,6 +10,7 @@ pub mod error;
 pub mod events;
 pub mod metrics;
 pub mod models;
+pub mod reports;
 pub mod routes;
 pub mod state;
 pub mod sync;

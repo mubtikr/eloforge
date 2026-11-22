@@ -24,10 +24,10 @@
 - [x] **T2.7** Write unit & integration tests validating move classification, blunder tagging, and clock parsing against sample 500-Elo Rapid PGNs.
 
 ## Phase 3: OpenCode Go AI Coach & Reflection Memory
-- [ ] **T3.1** Build `backend/src/ai/provider.rs` (`LlmProvider` trait) and `backend/src/ai/opencode_go.rs` supporting `https://opencode.ai/zen/go/v1`, custom `User-Agent`, mandatory `x-opencode-session` UUID header, protocol routing (`chat` / `messages` / `responses`), UTF-8 SSE streaming, and 502/503/529 retries.
-- [ ] **T3.2** Create prompt templates under `backend/prompts/`: `match_coach.md`, `reflection_coach.md`, `weekly_briefing.md`, and `curriculum_next.md` (with strict Elo-band tone adaptation and anti-hallucination constraints).
-- [ ] **T3.3** Implement `POST /api/games/{id}/moves/{move_id}/reflect` saving user explanation, retrieving past reflections with matching mistake tags, calling OpenCode Go with the game's stable `x-opencode-session` UUID, and storing `ai_feedback` + `next_time_rule`.
-- [ ] **T3.4** Implement `POST /api/reports/weekly/generate` and `GET /api/reports/*` endpoints covering all 8 reports in `PRD.md`.
+- [x] **T3.1** Build `backend/src/ai/provider.rs` (`LlmProvider` trait) and `backend/src/ai/opencode_go.rs` supporting `https://opencode.ai/zen/go/v1`, custom `User-Agent`, mandatory `x-opencode-session` UUID header, protocol routing (`chat` / `messages` / `responses`), UTF-8 SSE streaming, and 502/503/529 retries.
+- [x] **T3.2** Create prompt templates under `backend/prompts/`: `match_coach.md`, `reflection_coach.md`, `weekly_briefing.md`, and `curriculum_next.md` (with strict Elo-band tone adaptation and anti-hallucination constraints).
+- [x] **T3.3** Implement `POST /api/games/{id}/moves/{move_id}/reflect` saving user explanation, retrieving past reflections with matching mistake tags, calling OpenCode Go with the game's stable `x-opencode-session` UUID, and storing `ai_feedback` + `next_time_rule`.
+- [x] **T3.4** Implement `POST /api/reports/weekly/generate` and `GET /api/reports/*` endpoints covering all 8 reports in `PRD.md`.
 
 ## Phase 4: Mistake Puzzles, Endgame Sparring & Road-to-GM Engine
 - [ ] **T4.1** Build `backend/src/training/puzzle_extractor.rs`: auto-create `blunder_fix` puzzles from every user blunder (`EPL >= 0.15`) and `endgame_conversion` drills from every `WINNING_GAME_THROWN` / `ENDGAME_TECHNIQUE_FAIL`.

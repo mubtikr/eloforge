@@ -10,13 +10,21 @@ export type AuthResponse = { user: UserDto, };
 
 export type ChallengeStart = { challenge_id: string, username: string, nonce: string, expires_at: string, instructions: string, profile: ProfilePreview | null, };
 
+export type ConversionReport = { threshold: number, reached: number, converted: number, rate: number, by_endgame_type: Array<EndgameTypeStat>, thrown_games: Array<GameRef>, biggest_win: GameRef | null, };
+
+export type CurriculumReport = { focus: string, text: string, next_week_rule: string, ai_status: string, model: string, facts: unknown, };
+
 export type DepthAccuracy = { label: string, moves: number, accuracy: number, };
+
+export type EndgameTypeStat = { kind: string, reached: number, converted: number, rate: number, };
 
 export type FocusReport = { total_user_moves: number, impulsive_blunders: number, impulsivity_index: number, blunder_count: number, cascade_instances: number, post_blunder_cascade_rate: number, sessions_analyzed: number, game1_accuracy: number, game3plus_accuracy: number, session_tilt_drop: number, hour_heatmap: Array<HourAccuracy>, depth_fatigue: Array<DepthAccuracy>, session_curve: Array<SessionIndexRate>, };
 
 export type GameDetail = { game: GameSummary, initial_fen: string, accuracy_white: number | null, accuracy_black: number | null, eval_peak: number | null, analysis: unknown | null, moves: Array<MoveDto>, reflections: Array<ReflectionDto>, };
 
 export type GamePage = { items: Array<GameSummary>, total: number, limit: number, offset: number, };
+
+export type GameRef = { id: string, white_username: string, black_username: string, result: string, start_time: string, max_advantage: number | null, accuracy_user: number | null, };
 
 export type GameSummary = { id: string, url: string | null, white_username: string, black_username: string, white_rating: number | null, black_rating: number | null, user_color: string, result: string, result_reason: string | null, time_class: string | null, time_control: string | null, rated: boolean, start_time: string, end_time: string | null, move_count: number, opening_eco: string | null, opening_name: string | null, last_book_ply: number | null, analysis_status: string, accuracy_user: number | null, max_advantage: number | null, session_id: string | null, };
 
@@ -26,9 +34,29 @@ export type HourAccuracy = { hour: number, games: number, accuracy: number, win_
 
 export type MoveDto = { id: number, ply: number, move_number: number, color: string, san: string, uci: string, fen_before: string, fen_after: string, clock_remaining_sec: number | null, time_spent_sec: number | null, eval_before_cp: number | null, eval_after_cp: number | null, eval_mate: number | null, win_prob_user: number | null, best_move_uci: string | null, best_move_san: string | null, epl: number | null, classification: string | null, mistake_tags: Array<string>, pv: unknown | null, };
 
+export type OpeningReport = { white: Array<OpeningStat>, black: Array<OpeningStat>, recommendations: Array<string>, };
+
+export type OpeningStat = { eco: string, name: string, color: string, games: number, wins: number, draws: number, losses: number, win_rate: number, accuracy: number, out_of_book_move: number, most_punished: boolean, };
+
 export type ProfilePreview = { username: string, name: string | null, avatar: string | null, title: string | null, country: string | null, url: string | null, rapid_rating: number | null, blitz_rating: number | null, bullet_rating: number | null, rapid_games: number | null, };
 
+export type RatingLeak = { tag: string, label: string, count: number, avg_epl: number, estimated_elo_cost: number, trend: string, advice: string, };
+
+export type ReflectDone = { reflection_id: string, next_time_rule: string, ai_status: string, model: string, };
+
+export type ReflectMeta = { reflection_id: string, session_id: string, model: string, ai_configured: boolean, };
+
+export type ReflectRequest = { reason_tags: Array<string>, explanation: string, };
+
 export type ReflectionDto = { id: string, move_id: number, reason_tags: Array<string>, explanation: string, ai_feedback: string | null, next_time_rule: string | null, ai_status: string | null, created_at: string, };
+
+export type ReflectionReport = { total: number, top_reasons: Array<TagCount>, shrinking: Array<string>, persisting: Array<string>, recent: Array<ReflectionDto>, };
+
+export type ReportSummary = { id: string, kind: string, title: string, model: string | null, created_at: string, };
+
+export type RoadmapReport = { current_elo: number | null, next_target: number | null, progress_pct: number, stages: Array<RoadmapStage>, };
+
+export type RoadmapStage = { stage: number, target_elo: number, title: string, description: string, criteria: Array<string>, completed: boolean, current: boolean, };
 
 export type SessionIndexRate = { index: number, games: number, win_rate: number, accuracy: number, };
 
@@ -38,6 +66,12 @@ export type SyncStatus = { running: boolean, total_games: number, analyzed_games
 
 export type SyncTriggerResponse = { accepted: boolean, message: string, };
 
+export type TagCount = { tag: string, label: string, count: number, };
+
 export type UserDto = { id: string, chesscom_username: string, display_name: string | null, country: string | null, avatar_url: string | null, title: string | null, current_elo: number | null, peak_elo: number | null, created_at: string, };
 
 export type VerifyChallengeRequest = { challenge_id: string, };
+
+export type WeaknessReport = { total_user_moves: number, total_blunders: number, tags: Array<RatingLeak>, top_three: Array<RatingLeak>, };
+
+export type WeeklyReport = { id: string, generated_at: string, model: string, ai_status: string, summary: string, next_week_rule: string, top_leaks: Array<RatingLeak>, action_plan: Array<string>, facts: unknown, };
