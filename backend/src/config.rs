@@ -120,6 +120,19 @@ impl Config {
             other => anyhow::bail!("unknown OPENCODE_GO_PROTOCOL: {other}"),
         };
 
+        let requested_workers = parse_or("STOCKFISH_WORKERS", default_workers)?.max(1);
+        let stockfish_workers = requested_workers.min(default_workers).max(1);
+        if requested_workers > stockfish_workers {
+            tracing::warn!(
+                requested = requested_workers,
+                allowed = stockfish_workers,
+                "STOCKFISH_WORKERS exceeds available parallelism minus one; clamping"
+            );
+        }
+        let cores = std::thread::available_parallelism()
+            .map(|n| n.get())
+            .unwrap_or(2);
+
         let cfg = Self {
             database_url: var("DATABASE_URL")?,
             valkey_url: var("VALKEY_URL")?,
@@ -129,15 +142,12 @@ impl Config {
             frontend_origin: var_or("FRONTEND_ORIGIN", "http://localhost:5173"),
             log_format: var_or("LOG_FORMAT", "pretty"),
             stockfish_path: var_or("STOCKFISH_PATH", "stockfish"),
-            stockfish_workers: parse_or("STOCKFISH_WORKERS", default_workers)?.max(1),
+            stockfish_workers,
             stockfish_hash_mb: parse_or("STOCKFISH_HASH_MB", 128u32)?,
-            stockfish_threads: {
-                let workers = parse_or("STOCKFISH_WORKERS", default_workers)?.max(1);
-                let cores = std::thread::available_parallelism()
-                    .map(|n| n.get())
-                    .unwrap_or(2);
-                parse_or("STOCKFISH_THREADS", (cores / workers).clamp(1, 4))?
-            },
+            stockfish_threads: parse_or(
+                "STOCKFISH_THREADS",
+                (cores / stockfish_workers).clamp(1, 4),
+            )?,
             stockfish_timeout_ms: parse_or("STOCKFISH_TIMEOUT_MS", 5000u64)?,
             analysis_depth_full: parse_or("ANALYSIS_DEPTH_FULL", 14u8)?,
             analysis_depth_critical: parse_or("ANALYSIS_DEPTH_CRITICAL", 20u8)?,
@@ -178,14 +188,6 @@ impl Config {
             sync_interval_minutes: parse_or("SYNC_INTERVAL_MINUTES", 15u64)?.max(1),
             sync_max_archives: parse_or("SYNC_MAX_ARCHIVES", 120usize)?.max(1),
         };
-
-        if cfg.stockfish_workers > default_workers {
-            tracing::warn!(
-                requested = cfg.stockfish_workers,
-                allowed = default_workers,
-                "STOCKFISH_WORKERS exceeds available parallelism minus one"
-            );
-        }
 
         Ok(cfg)
     }
