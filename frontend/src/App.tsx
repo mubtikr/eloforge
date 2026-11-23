@@ -6,6 +6,8 @@ import { LoadingBlock } from './components/ui'
 import { useAuth } from './hooks/useAuth'
 import Dashboard from './pages/Dashboard'
 import Focus from './pages/Focus'
+import Games from './pages/Games'
+import More from './pages/More'
 import Landing from './pages/Landing'
 import MatchLab from './pages/MatchLab'
 import Openings from './pages/Openings'
@@ -33,7 +35,9 @@ export default function App() {
       <Route path="/" element={<Landing />} />
       <Route path="/connect" element={<Landing />} />
       <Route path="/app" element={<Protected><Dashboard /></Protected>} />
+      <Route path="/games" element={<Protected><Games /></Protected>} />
       <Route path="/games/:id" element={<Protected><MatchLab /></Protected>} />
+      <Route path="/more" element={<Protected><More /></Protected>} />
       <Route path="/openings" element={<Protected><Openings /></Protected>} />
       <Route path="/focus" element={<Protected><Focus /></Protected>} />
       <Route path="/puzzles" element={<Protected><Puzzles /></Protected>} />

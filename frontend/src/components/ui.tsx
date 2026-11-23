@@ -5,16 +5,18 @@ export function PageHeader({
   title,
   description,
   actions,
+  className,
 }: {
   eyebrow: string
   title: ReactNode
   description?: ReactNode
   actions?: ReactNode
+  className?: string
 }) {
   return (
-    <header className="page-head">
+    <header className={`page-head${className ? ` ${className}` : ''}`}>
       <div>
-        <p className="ef-label">{eyebrow}</p>
+        <p className="ef-label page-head__eyebrow">{eyebrow}</p>
         <h1 className="page-head__title">{title}</h1>
         {description ? <p className="page-head__copy">{description}</p> : null}
       </div>

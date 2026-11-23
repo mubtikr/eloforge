@@ -1,7 +1,11 @@
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::{analyzer::focus_tilt::compute_focus, error::AppResult, reports};
+use crate::{
+    analyzer::focus_tilt::{compute_focus, resolve_timezone},
+    error::AppResult,
+    reports,
+};
 
 pub async fn seed_roadmap(db: &PgPool, user_id: Uuid) -> AppResult<()> {
     let existing: i64 = sqlx::query_scalar(
@@ -48,7 +52,8 @@ pub async fn recompute_roadmap(db: &PgPool, user_id: Uuid) -> AppResult<()> {
             .flatten();
     let elo = current_elo.unwrap_or(500);
 
-    let focus = compute_focus(db, user_id).await?;
+    let timezone = resolve_timezone(db, user_id, None).await?;
+    let focus = compute_focus(db, user_id, &timezone).await?;
     let weakness = reports::weakness_report(db, user_id).await?;
     let conversion = reports::conversion_report(db, user_id).await?;
 
@@ -197,6 +202,10 @@ pub async fn roadmap_view(db: &PgPool, user_id: Uuid) -> AppResult<crate::models
                     .get("criteria")
                     .and_then(|value| serde_json::from_value(value.clone()).ok())
                     .unwrap_or_default();
+                let criteria_met = progress
+                    .get("criteria_met")
+                    .and_then(serde_json::Value::as_bool)
+                    .unwrap_or(false);
                 crate::models::RoadmapStageView {
                     stage,
                     target_elo,
@@ -213,6 +222,8 @@ pub async fn roadmap_view(db: &PgPool, user_id: Uuid) -> AppResult<crate::models
                     },
                     completed,
                     current: Some(stage) == current_stage,
+                    rating_reached: target_elo <= rating,
+                    criteria_met,
                     progress,
                 }
             },

@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 
 use chrono::Utc;
+use chrono_tz::Tz;
 use serde_json::json;
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -86,7 +87,19 @@ pub async fn generate_weekly(
         "model": model,
     });
 
-    let title = format!("Weekly briefing · {}", Utc::now().format("%Y-%m-%d"));
+    let timezone = sqlx::query_scalar::<_, Option<String>>(
+        "SELECT timezone FROM notification_settings WHERE user_id = $1",
+    )
+    .bind(user_id)
+    .fetch_optional(db)
+    .await?
+    .flatten()
+    .and_then(|value| value.parse::<Tz>().ok())
+    .unwrap_or(chrono_tz::UTC);
+    let title = format!(
+        "Weekly briefing · {}",
+        Utc::now().with_timezone(&timezone).format("%Y-%m-%d")
+    );
     let (id, generated_at): (Uuid, chrono::DateTime<Utc>) = sqlx::query_as(
         "INSERT INTO coaching_reports (user_id, kind, title, content, model)
          VALUES ($1, 'weekly', $2, $3, $4) RETURNING id, created_at",

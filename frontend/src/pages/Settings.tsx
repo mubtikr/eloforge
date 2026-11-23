@@ -11,6 +11,7 @@ import type {
 } from '../api/types'
 import { ErrorBlock, LoadingBlock, PageHeader } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
+import { browserTimeZone, setDisplayTimeZone, timeZoneLabel } from '../lib/timezone'
 
 const TIMEZONES = [
   'UTC',
@@ -25,6 +26,9 @@ const TIMEZONES = [
   'Asia/Dubai',
   'Asia/Kolkata',
   'Asia/Singapore',
+  'Africa/Cairo',
+  'Africa/Johannesburg',
+  'Asia/Riyadh',
   'Australia/Sydney',
 ]
 
@@ -55,7 +59,8 @@ export default function Settings() {
   })
   const health = useQuery({
     queryKey: ['health'],
-    queryFn: () => api<{ engine: { model: string; protocol: string } }>('/api/healthz'),
+    queryFn: () =>
+      api<{ engine: { model: string; protocol: string; ai_configured: boolean } }>('/api/healthz'),
     retry: false,
   })
 
@@ -75,6 +80,7 @@ export default function Settings() {
       }),
     onSuccess: (data) => {
       setDraft(data)
+      setDisplayTimeZone(data.timezone)
       void queryClient.invalidateQueries({ queryKey: ['settings', 'notifications'] })
     },
   })
@@ -83,6 +89,8 @@ export default function Settings() {
     mutationFn: () => api<NotificationDelivery[]>('/api/settings/notifications/test', { method: 'POST' }),
     onSuccess: (data) => setDeliveries(data),
   })
+
+  const detectedTimeZone = browserTimeZone()
 
   async function enablePush() {
     if (!vapid.data?.public_key) {
@@ -119,7 +127,10 @@ export default function Settings() {
 
   function submit(event: FormEvent) {
     event.preventDefault()
-    if (form) save.mutate(form)
+    if (!form) return
+    if (form.email && (!form.email.includes('@') || form.email.length > 254)) return
+    if (form.telegram_chat_id && !/^-?\d+$/.test(form.telegram_chat_id.trim())) return
+    save.mutate(form)
   }
 
   async function logout() {
@@ -130,8 +141,24 @@ export default function Settings() {
 
   if (settings.isLoading) return <LoadingBlock label="Loading notification settings…" />
   if (settings.isError) return <ErrorBlock message={getErrorMessage(settings.error)} retry={() => void settings.refetch()} />
-  const form = draft ?? settings.data
+  const stored = settings.data
+  const form = draft ?? (stored
+    ? {
+        ...stored,
+        timezone:
+          !stored.configured && stored.timezone === 'UTC' ? detectedTimeZone : stored.timezone,
+      }
+    : null)
   if (!form) return null
+
+  const emailError =
+    form.email && (!form.email.includes('@') || form.email.length > 254)
+      ? 'Enter a valid email address.'
+      : null
+  const telegramError =
+    form.telegram_chat_id && !/^-?\d+$/.test(form.telegram_chat_id.trim())
+      ? 'Telegram chat IDs are numeric.'
+      : null
 
   return (
     <>
@@ -152,7 +179,13 @@ export default function Settings() {
               <div><dt>Chess.com</dt><dd>{user?.chesscom_username}</dd></div>
               <div><dt>Peak</dt><dd className="ef-mono">{user?.peak_elo ?? '—'}</dd></div>
               <div><dt>Country</dt><dd>{user?.country?.split('/').pop() ?? '—'}</dd></div>
-              <div><dt>Coach model</dt><dd className="ef-mono">{health.data?.engine.model ?? 'deepseek-v4.1-flash'}</dd></div>
+              <div>
+                <dt>Coach mode</dt>
+                <dd>
+                  {health.data?.engine.ai_configured ? 'Live coach' : 'Coach notes (offline)'}
+                  <span className="ef-mono account-model">{health.data?.engine.model ?? 'deepseek-v4.1-flash'}</span>
+                </dd>
+              </div>
             </dl>
             <button className="ef-btn ef-btn--ghost" type="button" onClick={logout}>
               <LogOut size={15} /> Log out
@@ -202,12 +235,22 @@ export default function Settings() {
                   value={form.timezone}
                   onChange={(event) => setDraft({ ...form, timezone: event.target.value })}
                 >
-                  {TIMEZONES.map((timezone) => (
+                  {Array.from(new Set([...TIMEZONES, form.timezone, detectedTimeZone])).sort().map((timezone) => (
                     <option key={timezone} value={timezone}>{timezone}</option>
                   ))}
                 </select>
               </label>
             </div>
+            {detectedTimeZone !== form.timezone ? (
+              <p className="settings-detected">
+                Browser timezone detected: {timeZoneLabel(detectedTimeZone)}.{' '}
+                <button type="button" onClick={() => setDraft({ ...form, timezone: detectedTimeZone })}>
+                  Use it
+                </button>
+              </p>
+            ) : (
+              <p className="settings-detected">Using {timeZoneLabel(form.timezone)} for reports and reminders.</p>
+            )}
           </section>
 
           <section className="settings-section">
@@ -222,6 +265,8 @@ export default function Settings() {
                 placeholder="e.g. 123456789"
                 inputMode="numeric"
               />
+              {telegramError ? <span className="settings-help settings-help--error">{telegramError}</span> : null}
+              <span className="settings-help">Send /start to your bot, then paste the chat ID from the bot’s update.</span>
             </label>
             <label className="settings-field">
               <span className="ef-label">Email</span>
@@ -232,6 +277,8 @@ export default function Settings() {
                 onChange={(event) => setDraft({ ...form, email: event.target.value || null })}
                 placeholder="you@example.com"
               />
+              {emailError ? <span className="settings-help settings-help--error">{emailError}</span> : null}
+              <span className="settings-help">Requires SMTP_* on the server. The test button reports each channel.</span>
             </label>
             <div className="push-block">
               <div>
@@ -258,6 +305,7 @@ export default function Settings() {
               <Send size={15} /> {test.isPending ? 'Sending…' : 'Send test'}
             </button>
             {save.error ? <p className="form-error">{getErrorMessage(save.error)}</p> : null}
+            {save.isSuccess ? <p className="form-success" role="status">Settings saved. Your next reminder uses this timezone.</p> : null}
             {test.error ? <p className="form-error">{getErrorMessage(test.error)}</p> : null}
           </div>
           {deliveries ? (

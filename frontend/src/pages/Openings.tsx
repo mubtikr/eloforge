@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { api, getErrorMessage } from '../api/client'
@@ -30,14 +31,21 @@ function OpeningTable({ title, rows, color }: { title: string; rows: OpeningStat
         <span>W / D / L</span>
         <span>Win rate</span>
         <span>Acc.</span>
-        <span>Book ends</span>
+        <span>Leaves book</span>
       </div>
       {rows.map((row) => (
-        <div className="opening-row" key={`${row.color}-${row.eco}-${row.name}`}>
+        <Link
+          className="opening-row"
+          key={`${row.color}-${row.eco}-${row.name}`}
+          to={`/games?opening=${encodeURIComponent(row.eco)}`}
+        >
           <span className="opening-row__name">
             <span className="ef-mono">{row.eco}</span>
             <strong>{shortName(row.name, 42)}</strong>
             {row.most_punished ? <Tag tone="sienna">most punished</Tag> : null}
+            <span className="opening-row__mobile-meta ef-mono">
+              {row.games}G · {formatPercent(row.win_rate, 0)} win · {formatPercent(row.accuracy, 0)} acc
+            </span>
           </span>
           <span className="ef-mono">{row.games}</span>
           <span className="ef-mono">
@@ -51,7 +59,7 @@ function OpeningTable({ title, rows, color }: { title: string; rows: OpeningStat
           </span>
           <span className="ef-mono">{formatPercent(row.accuracy, 0)}</span>
           <span className="ef-mono">move {row.out_of_book_move.toFixed(1)}</span>
-        </div>
+        </Link>
       ))}
     </section>
   )
@@ -69,6 +77,10 @@ export default function Openings() {
   if (!data) return null
 
   const total = data.white.length + data.black.length
+  const priorities = [...data.white, ...data.black]
+    .filter((row) => row.games >= 2)
+    .sort((a, b) => a.win_rate - b.win_rate)
+    .slice(0, 3)
 
   return (
     <>
@@ -85,6 +97,27 @@ export default function Openings() {
         </EmptyState>
       ) : (
         <>
+          {priorities.length > 0 ? (
+            <section className="opening-priorities" aria-labelledby="opening-priorities-title">
+              <div className="opening-priorities__head">
+                <p className="ef-label">Start here</p>
+                <h2 id="opening-priorities-title">Three lines deserve a review first.</h2>
+              </div>
+              <ol>
+                {priorities.map((line) => (
+                  <li key={`${line.color}-${line.eco}-${line.name}`}>
+                    <Link to={`/games?opening=${encodeURIComponent(line.eco)}`}>
+                      <span className="ef-mono">{line.eco}</span>
+                      <strong>{shortName(line.name, 36)}</strong>
+                      <span className="ef-mono">{formatPercent(line.win_rate, 0)} win · {line.games} games</span>
+                      <span className="opening-priorities__cta">Review games <ArrowRight size={13} /></span>
+                    </Link>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          ) : null}
+
           <section className="opening-advice">
             <p className="ef-label">Elo-appropriate repertoire advice</p>
             <ol>
@@ -105,9 +138,9 @@ export default function Openings() {
           <section className="opening-note">
             <p className="ef-label">How to read “book ends”</p>
             <p>
-              A number below move 4 means the position leaves the ECO database early. That is not automatically
-              bad, but it means the next moves are your own plan, not memory. The flag “most punished” marks lines
-              with at least three games where losses equal or exceed wins.
+              “Leaves book” is the average move where you leave the ECO database. A low number is not automatically
+              bad; it means the next moves are your own plan, not memory. “Most punished” marks lines with at least
+              three games where losses equal or exceed wins. Click any line to review those games.
             </p>
           </section>
         </>

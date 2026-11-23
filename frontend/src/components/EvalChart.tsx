@@ -72,6 +72,8 @@ export default function EvalChart({ moves, userColor, selectedPly, onSelect }: E
 
   const selected = moves.find((move) => move.ply === selectedPly)
   const selectedEval = selected?.eval_after_cp ?? moves[0]?.eval_before_cp ?? 0
+  const hasClock = moves.some((move) => move.clock_remaining_sec !== null)
+  const summary = `Evaluation starts at ${formatEval(moves[0]?.eval_before_cp ?? 0, null)} and ends at ${formatEval(moves[moves.length - 1]?.eval_after_cp ?? 0, null)} after ${moves.length} plies.`
 
   function choosePly(clientX: number) {
     const svg = svgRef.current
@@ -110,8 +112,8 @@ export default function EvalChart({ moves, userColor, selectedPly, onSelect }: E
         </div>
         <div className="eval-chart__legend">
           <span><i className="swatch swatch--eval" /> eval</span>
-          <span><i className="swatch swatch--clock" /> your clock</span>
-          <span><i className="swatch swatch--enemy" /> opponent</span>
+          {hasClock ? <span><i className="swatch swatch--clock" /> your clock</span> : null}
+          {hasClock ? <span><i className="swatch swatch--enemy" /> opponent</span> : null}
         </div>
       </div>
       <svg
@@ -120,6 +122,7 @@ export default function EvalChart({ moves, userColor, selectedPly, onSelect }: E
         className="eval-chart__svg"
         role="img"
         aria-label="Evaluation curve and clock usage by ply. Use left and right arrow keys to scrub."
+        aria-describedby="eval-chart-summary"
         tabIndex={0}
         onPointerMove={(event) => handleMove(event.clientX)}
         onPointerDown={(event) => choosePly(event.clientX)}
@@ -153,8 +156,12 @@ export default function EvalChart({ moves, userColor, selectedPly, onSelect }: E
         })}
         <path d={area} fill="url(#eval-area)" />
         <path d={path} fill="none" stroke="#3f5560" strokeWidth="1.9" />
-        <path d={clockUserPath} fill="none" stroke="#3f5560" strokeWidth="1" strokeDasharray="4 4" opacity="0.55" />
-        <path d={clockEnemyPath} fill="none" stroke="#a64a24" strokeWidth="1" strokeDasharray="1 4" opacity="0.5" />
+        {hasClock ? (
+          <>
+            <path d={clockUserPath} fill="none" stroke="#3f5560" strokeWidth="1" strokeDasharray="4 4" opacity="0.55" />
+            <path d={clockEnemyPath} fill="none" stroke="#a64a24" strokeWidth="1" strokeDasharray="1 4" opacity="0.5" />
+          </>
+        ) : null}
         {critical.map((move) => (
           <rect
             key={move.id}
@@ -182,10 +189,28 @@ export default function EvalChart({ moves, userColor, selectedPly, onSelect }: E
           move {moves.length}
         </text>
       </svg>
-      <figcaption className="sr-only">
-        Evaluation starts at {formatEval(moves[0]?.eval_before_cp ?? 0, null)} and ends at{' '}
-        {formatEval(moves[moves.length - 1]?.eval_after_cp ?? 0, null)} after {moves.length} plies.
+      <figcaption className="sr-only" id="eval-chart-summary">
+        {summary}
       </figcaption>
+      {!hasClock ? <p className="eval-chart__note">No clock data for this time control; the eval line stands alone.</p> : null}
+      <details className="chart-data eval-chart__data">
+        <summary>Show the evaluation data as a table</summary>
+        <table>
+          <thead>
+            <tr><th>Ply</th><th>Move</th><th>Eval</th><th>Clock</th></tr>
+          </thead>
+          <tbody>
+            {moves.map((move) => (
+              <tr key={move.id}>
+                <td>{move.ply}</td>
+                <td>{move.move_number}. {move.san}</td>
+                <td>{formatEval(move.eval_after_cp, move.eval_mate)}</td>
+                <td>{move.clock_remaining_sec !== null ? `${move.clock_remaining_sec.toFixed(0)}s` : '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </details>
     </figure>
   )
 }

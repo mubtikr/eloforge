@@ -1,10 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
+import { ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { api, getErrorMessage } from '../api/client'
 import type { FocusReport } from '../api/types'
 import { EmptyState, ErrorBlock, LoadingBlock, PageHeader, StatBlock } from '../components/ui'
 import { formatPercent } from '../lib/format'
+import { getDisplayTimeZone, timeZoneLabel } from '../lib/timezone'
 
 function ImpulseScatter({ report }: { report: FocusReport }) {
   const width = 680
@@ -60,6 +62,25 @@ function ImpulseScatter({ report }: { report: FocusReport }) {
         ))}
         <line x1={pad.left} x2={width - pad.right} y1={height - pad.bottom} y2={height - pad.bottom} stroke="#b9ab95" />
       </svg>
+      <figcaption className="sr-only">
+        Blunder rate by time spent: {report.time_buckets.map((bucket) => `${bucket.label} ${bucket.blunder_rate.toFixed(0)} percent`).join(', ')}.
+      </figcaption>
+      <details className="chart-data">
+        <summary>Show the time-band data as a table</summary>
+        <table>
+          <thead><tr><th>Band</th><th>Moves</th><th>Blunder rate</th><th>Accuracy</th></tr></thead>
+          <tbody>
+            {report.time_buckets.map((bucket) => (
+              <tr key={bucket.label}>
+                <td>{bucket.label}</td>
+                <td>{bucket.moves}</td>
+                <td>{formatPercent(bucket.blunder_rate, 0)}</td>
+                <td>{formatPercent(bucket.accuracy, 0)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </details>
     </figure>
   )
 }
@@ -100,6 +121,22 @@ function TiltCurve({ report }: { report: FocusReport }) {
           </span>
         ))}
       </figcaption>
+      <details className="chart-data">
+        <summary>Show the session data as a table</summary>
+        <table>
+          <thead><tr><th>Game in session</th><th>Games</th><th>Accuracy</th><th>Win rate</th></tr></thead>
+          <tbody>
+            {report.session_curve.map((slot) => (
+              <tr key={slot.index}>
+                <td>{slot.index === 3 ? '3+' : slot.index}</td>
+                <td>{slot.games}</td>
+                <td>{formatPercent(slot.accuracy, 0)}</td>
+                <td>{formatPercent(slot.win_rate, 0)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </details>
     </figure>
   )
 }
@@ -112,9 +149,10 @@ function heatColor(accuracy: number, games: number): string {
 }
 
 export default function Focus() {
+  const timeZone = getDisplayTimeZone()
   const query = useQuery({
-    queryKey: ['focus'],
-    queryFn: () => api<FocusReport>('/api/focus'),
+    queryKey: ['focus', timeZone],
+    queryFn: () => api<FocusReport>(`/api/focus?tz=${encodeURIComponent(timeZone)}`),
   })
 
   if (query.isLoading) return <LoadingBlock label="Reading the clock data…" />
@@ -145,17 +183,41 @@ export default function Focus() {
         actions={<Link className="ef-btn ef-btn--ghost" to="/app">Back to Today</Link>}
       />
 
+      <section className="focus-verdict" aria-label="Focus verdict">
+        <div>
+          <p className="ef-label">The one thing to change</p>
+          <h2>
+            {worstBand && worstBand.moves > 0
+              ? `Your ${worstBand.label} moves are the weak point.`
+              : 'Keep gathering clock data.'}
+          </h2>
+          <p>
+            {worstBand
+              ? `${formatPercent(worstBand.blunder_rate, 0)} of moves in this band are tagged mistakes or worse. ${bestBand ? `Your cleanest band is ${bestBand.label}.` : ''}`
+              : 'Import a few Rapid games so the clock can tell an honest story.'}
+          </p>
+        </div>
+        <div className="focus-verdict__actions">
+          <Link className="ef-btn ef-btn--primary" to="/puzzles?tag=TACTICAL_BLINDNESS">
+            Practise the pattern <ArrowRight size={14} />
+          </Link>
+          <Link className="ef-btn ef-btn--ghost" to="/games">
+            Review the games
+          </Link>
+        </div>
+      </section>
+
       <section className="focus-stats">
         <StatBlock
-          label="Impulsivity index"
+          label="Moves played too fast"
           value={formatPercent(report.impulsivity_index * 100, 1)}
-          note={`${report.impulsive_blunders} of ${report.total_user_moves} moves`}
+          note={`${report.impulsive_blunders} of ${report.total_user_moves} moves were quick mistakes`}
           tone="sienna"
         />
         <StatBlock
           label="Post-blunder cascade"
           value={formatPercent(report.post_blunder_cascade_rate * 100, 0)}
-          note={`${report.cascade_instances} second blunder within 3 moves`}
+          note={`${report.cascade_instances} blunders followed by another within 3 moves`}
           tone="brass"
         />
         <StatBlock
@@ -169,9 +231,9 @@ export default function Focus() {
           tone="slate"
         />
         <StatBlock
-          label="Analysed user moves"
-          value={report.total_user_moves}
-          note={`${report.blunder_count} blunder(s) tagged`}
+          label="Blunders tagged"
+          value={report.blunder_count}
+          note={`of ${report.total_user_moves} analysed moves`}
         />
       </section>
 
@@ -206,7 +268,7 @@ export default function Focus() {
             <p className="ef-label">Chronotype</p>
             <h2>Accuracy by hour of day</h2>
           </div>
-          <span className="ef-mono">UTC · {report.hour_heatmap.reduce((sum, hour) => sum + hour.games, 0)} games</span>
+          <span className="ef-mono">{timeZoneLabel(report.timezone)} · {report.hour_heatmap.reduce((sum, hour) => sum + hour.games, 0)} games</span>
         </div>
         <div className="heatmap" role="img" aria-label="Accuracy heatmap by hour of day">
           {report.hour_heatmap.map((hour) => (
@@ -231,6 +293,34 @@ export default function Focus() {
           <span className="heatmap-key__swatch" style={{ background: heatColor(95, 1) }} />
           <span className="ef-label">high</span>
         </div>
+        <details className="chart-data">
+          <summary>Show the hourly data as a table</summary>
+          <table>
+            <thead><tr><th>Hour</th><th>Games</th><th>Accuracy</th><th>Win rate</th></tr></thead>
+            <tbody>
+              {report.hour_heatmap.filter((hour) => hour.games > 0).map((hour) => (
+                <tr key={hour.hour}>
+                  <td>{String(hour.hour).padStart(2, '0')}:00</td>
+                  <td>{hour.games}</td>
+                  <td>{formatPercent(hour.accuracy, 0)}</td>
+                  <td>{formatPercent(hour.win_rate, 0)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </details>
+      </section>
+
+      <section className="focus-actions">
+        <div>
+          <p className="ef-label">What to do next</p>
+          <h2>One drill, one review, one rule.</h2>
+        </div>
+        <ol>
+          <li><span className="ef-mono">01</span><span>Open the weakest time band as a puzzle filter and clear five drills.</span><Link to="/puzzles?tag=TACTICAL_BLINDNESS">Practise <ArrowRight size={13} /></Link></li>
+          <li><span className="ef-mono">02</span><span>Review one loss where you had more than half your clock left.</span><Link to="/games?result=loss">Review <ArrowRight size={13} /></Link></li>
+          <li><span className="ef-mono">03</span><span>Use the two-loss stop rule before the next session.</span><Link to="/roadmap">Set a goal <ArrowRight size={13} /></Link></li>
+        </ol>
       </section>
 
       <section className="depth-panel">

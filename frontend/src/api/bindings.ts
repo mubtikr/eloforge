@@ -18,7 +18,7 @@ export type DepthAccuracy = { label: string, moves: number, accuracy: number, };
 
 export type EndgameTypeStat = { kind: string, reached: number, converted: number, rate: number, };
 
-export type FocusReport = { total_user_moves: number, impulsive_blunders: number, impulsivity_index: number, blunder_count: number, cascade_instances: number, post_blunder_cascade_rate: number, sessions_analyzed: number, game1_accuracy: number, game3plus_accuracy: number, session_tilt_drop: number, hour_heatmap: Array<HourAccuracy>, depth_fatigue: Array<DepthAccuracy>, session_curve: Array<SessionIndexRate>, time_buckets: Array<TimeBucket>, };
+export type FocusReport = { timezone: string, total_user_moves: number, impulsive_blunders: number, impulsivity_index: number, blunder_count: number, cascade_instances: number, post_blunder_cascade_rate: number, sessions_analyzed: number, game1_accuracy: number, game3plus_accuracy: number, session_tilt_drop: number, hour_heatmap: Array<HourAccuracy>, depth_fatigue: Array<DepthAccuracy>, session_curve: Array<SessionIndexRate>, time_buckets: Array<TimeBucket>, };
 
 export type GameDetail = { game: GameSummary, initial_fen: string, accuracy_white: number | null, accuracy_black: number | null, eval_peak: number | null, analysis: unknown | null, moves: Array<MoveDto>, reflections: Array<ReflectionDto>, };
 
@@ -28,7 +28,7 @@ export type GameRef = { id: string, white_username: string, black_username: stri
 
 export type GameSummary = { id: string, url: string | null, white_username: string, black_username: string, white_rating: number | null, black_rating: number | null, user_color: string, result: string, result_reason: string | null, time_class: string | null, time_control: string | null, rated: boolean, start_time: string, end_time: string | null, move_count: number, opening_eco: string | null, opening_name: string | null, last_book_ply: number | null, analysis_status: string, accuracy_user: number | null, max_advantage: number | null, session_id: string | null, };
 
-export type GamesQuery = { limit: number | null, offset: number | null, status: string | null, result: string | null, };
+export type GamesQuery = { limit: number | null, offset: number | null, status: string | null, result: string | null, opening: string | null, time_class: string | null, };
 
 export type GoalCreateRequest = { title: string, description: string | null, target_elo: number | null, target_date: string | null, };
 
@@ -40,7 +40,7 @@ export type MoveDto = { id: number, ply: number, move_number: number, color: str
 
 export type NotificationDelivery = { channel: string, ok: boolean, detail: string, };
 
-export type NotificationSettingsDto = { user_id: string, telegram_chat_id: string | null, email: string | null, web_push_subscription: unknown | null, daily_reminder: boolean, tilt_alerts: boolean, reminder_hour: number, timezone: string, };
+export type NotificationSettingsDto = { user_id: string, configured: boolean, telegram_chat_id: string | null, email: string | null, web_push_subscription: unknown | null, daily_reminder: boolean, tilt_alerts: boolean, reminder_hour: number, timezone: string, };
 
 export type NotificationSettingsUpdate = { telegram_chat_id: string | null, email: string | null, web_push_subscription: unknown | null, daily_reminder: boolean, tilt_alerts: boolean, reminder_hour: number, timezone: string, };
 
@@ -50,15 +50,17 @@ export type OpeningStat = { eco: string, name: string, color: string, games: num
 
 export type ProfilePreview = { username: string, name: string | null, avatar: string | null, title: string | null, country: string | null, url: string | null, rapid_rating: number | null, blitz_rating: number | null, bullet_rating: number | null, rapid_games: number | null, };
 
-export type PuzzleAttemptRequest = { uci: string, hints: number, elapsed_ms: bigint | null, rating: number | null, };
+export type PuzzleAttemptRequest = { uci: string, hints: number, elapsed_ms: bigint | null, rating: number | null, revealed: boolean, };
 
 export type PuzzleAttemptResult = { correct: boolean, solution_uci: string, solution_san: string | null, rating: number, interval_days: number, due_at: string, stability: number, state: string, mastered: boolean, };
 
 export type PuzzleDto = { id: string, game_id: string | null, move_id: bigint | null, kind: string, fen: string, solution_uci: string, solution_san: string | null, best_line: unknown | null, tags: Array<string>, epl: number | null, due_at: string, stability: number, difficulty: number, reps: number, lapses: number, state: string, mastered: boolean, white_username: string | null, black_username: string | null, result: string | null, };
 
+export type PuzzleExplanation = { puzzle_id: string, goal: string, motif: string, why: string, solution_san: string, opponent_reply_san: string | null, best_line_san: Array<string>, next_time_rule: string, best_line: unknown | null, };
+
 export type PuzzleList = { items: Array<PuzzleDto>, total: number, limit: number, offset: number, };
 
-export type PuzzleQuery = { limit: number | null, offset: number | null, kind: string | null, mastered: boolean | null, };
+export type PuzzleQuery = { limit: number | null, offset: number | null, kind: string | null, mastered: boolean | null, tag: string | null, };
 
 export type PuzzleStats = { due: number, total: number, mastered: number, blunder_fix: number, endgame_conversion: number, };
 
@@ -80,11 +82,13 @@ export type RoadmapReport = { current_elo: number | null, next_target: number | 
 
 export type RoadmapStage = { stage: number, target_elo: number, title: string, description: string, criteria: Array<string>, completed: boolean, current: boolean, };
 
-export type RoadmapStageView = { stage: number, target_elo: number, title: string, description: string, criteria: Array<string>, completed: boolean, current: boolean, progress: unknown, };
+export type RoadmapStageView = { stage: number, target_elo: number, title: string, description: string, criteria: Array<string>, completed: boolean, current: boolean, rating_reached: boolean, criteria_met: boolean, progress: unknown, };
 
 export type RoadmapView = { current_elo: number | null, next_target: number | null, progress_pct: number, metrics: unknown, stages: Array<RoadmapStageView>, };
 
 export type SessionIndexRate = { index: number, games: number, win_rate: number, accuracy: number, };
+
+export type SparringHint = { uci: string, san: string | null, message: string, };
 
 export type SparringMoveDto = { move_number: number, color: string, san: string, uci: string, fen_after: string, };
 
@@ -92,7 +96,7 @@ export type SparringMoveRequest = { uci: string, };
 
 export type SparringMoveResponse = { session: SparringSessionDto, user_move: SparringMoveDto, engine_move: SparringMoveDto | null, status: string, message: string, };
 
-export type SparringSessionDto = { id: string, game_id: string | null, puzzle_id: string | null, fen: string, initial_fen: string, user_color: string, enemy_elo: number | null, status: string, result: string | null, moves: Array<SparringMoveDto>, created_at: string, updated_at: string, };
+export type SparringSessionDto = { id: string, game_id: string | null, puzzle_id: string | null, fen: string, initial_fen: string, user_color: string, enemy_elo: number | null, status: string, result: string | null, moves: Array<SparringMoveDto>, puzzle_epl: number | null, puzzle_tags: Array<string>, white_username: string | null, black_username: string | null, created_at: string, updated_at: string, };
 
 export type SparringStartRequest = { puzzle_id: string | null, game_id: string | null, };
 

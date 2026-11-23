@@ -32,6 +32,7 @@ pub struct EngineInfo {
     pub queue_depth: usize,
     pub model: String,
     pub protocol: &'static str,
+    pub ai_configured: bool,
 }
 
 pub async fn healthz(
@@ -116,6 +117,7 @@ pub async fn healthz(
                 queue_depth: state.engine.queue_depth(),
                 model: state.cfg.opencode_model.clone(),
                 protocol: state.cfg.opencode_protocol.as_str(),
+                ai_configured: state.ai.is_configured(),
             },
         }),
     ))

@@ -12,8 +12,8 @@ use crate::{
     engine::EngineQuery,
     error::{AppError, AppResult},
     models::{
-        SparringMoveDto, SparringMoveRequest, SparringMoveResponse, SparringSessionDto,
-        SparringStartRequest,
+        SparringHint, SparringMoveDto, SparringMoveRequest, SparringMoveResponse,
+        SparringSessionDto, SparringStartRequest,
     },
     state::AppState,
 };
@@ -29,6 +29,10 @@ struct SessionRow {
     status: String,
     result: Option<String>,
     user_elo: Option<i32>,
+    puzzle_epl: Option<f64>,
+    puzzle_tags: Vec<String>,
+    white_username: Option<String>,
+    black_username: Option<String>,
     created_at: chrono::DateTime<chrono::Utc>,
     updated_at: chrono::DateTime<chrono::Utc>,
 }
@@ -60,14 +64,24 @@ impl SessionRow {
             status: self.status,
             result: self.result,
             moves,
+            puzzle_epl: self.puzzle_epl,
+            puzzle_tags: self.puzzle_tags,
+            white_username: self.white_username,
+            black_username: self.black_username,
             created_at: self.created_at,
             updated_at: self.updated_at,
         })
     }
 }
 
-const SESSION_SELECT: &str = "SELECT id, game_id, puzzle_id, fen, initial_fen, moves,
-        status, result, user_elo, created_at, updated_at FROM sparring_sessions";
+const SESSION_SELECT: &str = "SELECT s.id, s.game_id, s.puzzle_id, s.fen, s.initial_fen, s.moves,
+        s.status, s.result, s.user_elo,
+        p.epl AS puzzle_epl, COALESCE(p.tags, '{}') AS puzzle_tags,
+        g.white_username, g.black_username,
+        s.created_at, s.updated_at
+     FROM sparring_sessions s
+     LEFT JOIN puzzles p ON p.id = s.puzzle_id
+     LEFT JOIN games g ON g.id = s.game_id";
 
 pub async fn start(
     State(state): State<AppState>,
@@ -116,6 +130,14 @@ pub async fn start(
         .await?
         .flatten();
 
+    sqlx::query(
+        "UPDATE sparring_sessions SET status = 'abandoned', result = 'abandoned'
+         WHERE user_id = $1 AND status = 'active'",
+    )
+    .bind(auth.id)
+    .execute(&state.db)
+    .await?;
+
     let id: Uuid = sqlx::query_scalar(
         "INSERT INTO sparring_sessions
             (user_id, game_id, puzzle_id, fen, initial_fen, moves, status, user_elo)
@@ -129,7 +151,7 @@ pub async fn start(
     .fetch_one(&state.db)
     .await?;
 
-    let sql = format!("{SESSION_SELECT} WHERE id = $1 AND user_id = $2");
+    let sql = format!("{SESSION_SELECT} WHERE s.id = $1 AND s.user_id = $2");
     let row = sqlx::query_as::<_, SessionRow>(&sql)
         .bind(id)
         .bind(auth.id)
@@ -143,7 +165,7 @@ pub async fn get(
     auth: AuthUser,
     Path(session_id): Path<Uuid>,
 ) -> AppResult<Json<SparringSessionDto>> {
-    let sql = format!("{SESSION_SELECT} WHERE id = $1 AND user_id = $2");
+    let sql = format!("{SESSION_SELECT} WHERE s.id = $1 AND s.user_id = $2");
     let row = sqlx::query_as::<_, SessionRow>(&sql)
         .bind(session_id)
         .bind(auth.id)
@@ -157,7 +179,7 @@ pub async fn list(
     State(state): State<AppState>,
     auth: AuthUser,
 ) -> AppResult<Json<Vec<SparringSessionDto>>> {
-    let sql = format!("{SESSION_SELECT} WHERE user_id = $1 ORDER BY created_at DESC LIMIT 20");
+    let sql = format!("{SESSION_SELECT} WHERE s.user_id = $1 ORDER BY s.created_at DESC LIMIT 20");
     let rows = sqlx::query_as::<_, SessionRow>(&sql)
         .bind(auth.id)
         .fetch_all(&state.db)
@@ -169,13 +191,66 @@ pub async fn list(
     Ok(Json(items))
 }
 
+pub async fn hint(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(session_id): Path<Uuid>,
+) -> AppResult<Json<SparringHint>> {
+    let sql = format!("{SESSION_SELECT} WHERE s.id = $1 AND s.user_id = $2");
+    let row = sqlx::query_as::<_, SessionRow>(&sql)
+        .bind(session_id)
+        .bind(auth.id)
+        .fetch_optional(&state.db)
+        .await?
+        .ok_or_else(|| AppError::not_found("Sparring session not found."))?;
+    if row.status != "active" {
+        return Err(AppError::bad_request("This drill is already finished."));
+    }
+    let dto = row.clone().into_dto()?;
+    let user_white = dto.user_color == "white";
+    let turn_white = row
+        .fen
+        .split_whitespace()
+        .nth(1)
+        .map(|turn| turn == "w")
+        .unwrap_or(true);
+    if turn_white != user_white {
+        return Err(AppError::bad_request("Wait for the engine to move first."));
+    }
+
+    let eval = state
+        .engine
+        .evaluate(EngineQuery {
+            fen: row.fen.clone(),
+            depth: 12,
+            multipv: 1,
+            uci_elo: None,
+            movetime_ms: Some(400),
+        })
+        .await
+        .map_err(|err| AppError::Engine(format!("could not generate a hint: {err}")))?;
+    let best = eval
+        .best_move
+        .clone()
+        .ok_or_else(|| AppError::Engine("engine returned no hint".into()))?;
+    let san = apply_uci(&row.fen, &best)
+        .ok()
+        .map(|played| played.san.clone());
+    Ok(Json(SparringHint {
+        uci: best,
+        san,
+        message: "A strong candidate is highlighted. Use it as a plan, then convert the drill."
+            .into(),
+    }))
+}
+
 pub async fn make_move(
     State(state): State<AppState>,
     auth: AuthUser,
     Path(session_id): Path<Uuid>,
     Json(payload): Json<SparringMoveRequest>,
 ) -> AppResult<Json<SparringMoveResponse>> {
-    let sql = format!("{SESSION_SELECT} WHERE id = $1 AND user_id = $2");
+    let sql = format!("{SESSION_SELECT} WHERE s.id = $1 AND s.user_id = $2");
     let mut row = sqlx::query_as::<_, SessionRow>(&sql)
         .bind(session_id)
         .bind(auth.id)
@@ -324,7 +399,7 @@ pub async fn make_move(
         }
     }
 
-    let sql = format!("{SESSION_SELECT} WHERE id = $1 AND user_id = $2");
+    let sql = format!("{SESSION_SELECT} WHERE s.id = $1 AND s.user_id = $2");
     let updated = sqlx::query_as::<_, SessionRow>(&sql)
         .bind(row.id)
         .bind(auth.id)

@@ -85,7 +85,10 @@ function ConnectForm() {
         method: 'POST',
         body: JSON.stringify({ challenge_id: challenge?.challenge_id }),
       }),
-    onSuccess: () => navigate('/app'),
+    onSuccess: () => {
+      void api('/api/sync/trigger', { method: 'POST' }).catch(() => undefined)
+      navigate('/app')
+    },
   })
 
   function handleStart(event: FormEvent) {

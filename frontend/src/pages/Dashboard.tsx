@@ -18,10 +18,12 @@ import { useAuth } from '../hooks/useAuth'
 import {
   formatDate,
   formatPercent,
+  formatWeekdayDate,
   relativeTime,
   resultLabel,
   shortName,
 } from '../lib/format'
+import { getDisplayTimeZone, hourInTimeZone } from '../lib/timezone'
 
 function inline(text: string): ReactNode[] {
   const parts = text.split(/(\*\*[^*]+\*\*)/g)
@@ -92,7 +94,9 @@ export default function Dashboard() {
   })
 
   const firstName = user?.display_name?.split(' ')[0] ?? user?.chesscom_username ?? 'player'
-  const hour = now.getHours()
+  const timeZone = getDisplayTimeZone()
+  const hour = hourInTimeZone(now, timeZone)
+  const latestGame = games.data?.items[0] ?? null
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
   const stage = roadmap.data?.stages.find((item) => item.current)
   const topLeaks = weaknesses.data?.top_three ?? []
@@ -102,11 +106,7 @@ export default function Dashboard() {
   return (
     <>
       <PageHeader
-        eyebrow={new Intl.DateTimeFormat('en-GB', {
-          weekday: 'long',
-          day: '2-digit',
-          month: 'long',
-        }).format(now)}
+        eyebrow={formatWeekdayDate(now)}
         title={`${greeting}, ${firstName}.`}
         description="One board, one habit, one honest measurement at a time."
         actions={<SyncButton compact />}
@@ -152,9 +152,9 @@ export default function Dashboard() {
             </div>
             <div className="dash-hero__queue">
               <StatBlock
-                label="Due blunder drills"
-                value={due}
-                note={due > 0 ? 'Queue built from your own mistakes' : 'Queue is clear'}
+                label="Today's drills"
+                value={Math.min(due, 5)}
+                note={due > 0 ? `${due} due in the full queue` : 'Queue is clear'}
                 tone="brass"
               />
               <Link className="ef-btn ef-btn--primary" to="/puzzles">
@@ -166,6 +166,49 @@ export default function Dashboard() {
                 {sync.data?.running ? 'running now' : 'idle'}
               </p>
             </div>
+          </section>
+
+          <section className="daily-plan" aria-labelledby="daily-plan-title">
+            <div className="daily-plan__head">
+              <p className="ef-label">Your 10-minute plan</p>
+              <h2 id="daily-plan-title">Three actions, in this order.</h2>
+            </div>
+            <ol className="daily-plan__steps">
+              <li>
+                <span className="daily-plan__num ef-mono">01</span>
+                <div>
+                  <h3>Review one critical moment</h3>
+                  <p>Open the latest game at the first mistake, read the fact, write one sentence.</p>
+                  {latestGame ? (
+                    <Link className="daily-plan__action" to={`/games/${latestGame.id}`}>
+                      Review {latestGame.opening_name ?? 'the latest game'} <ArrowRight size={13} />
+                    </Link>
+                  ) : (
+                    <SyncButton compact />
+                  )}
+                </div>
+              </li>
+              <li>
+                <span className="daily-plan__num ef-mono">02</span>
+                <div>
+                  <h3>Clear the daily drill set</h3>
+                  <p>{due > 0 ? `${Math.min(due, 5)} of ${due} due drills fit the daily target.` : 'No drills are due. Analyse another game to create one.'}</p>
+                  <Link className="daily-plan__action" to="/puzzles">
+                    {due > 0 ? 'Start the set' : 'Open puzzle trainer'} <ArrowRight size={13} />
+                  </Link>
+                </div>
+              </li>
+              <li>
+                <span className="daily-plan__num ef-mono">03</span>
+                <div>
+                  <h3>Convert one endgame</h3>
+                  <p>Replay a winning endgame against a rating-calibrated Stockfish.</p>
+                  <Link className="daily-plan__action" to="/sparring">
+                    Open the Arena <ArrowRight size={13} />
+                  </Link>
+                </div>
+              </li>
+            </ol>
           </section>
 
           <div className="dash-columns">
@@ -197,8 +240,11 @@ export default function Dashboard() {
                         <div className="leak-list__meta ef-mono">
                           <span>{leak.count} tagged</span>
                           <span>avg {formatPercent(leak.avg_epl * 100, 1)} win lost</span>
-                          <span>≈ {Math.round(leak.estimated_elo_cost)} Elo</span>
+                          <span>≈ {Math.round(leak.estimated_elo_cost)} Elo (estimated)</span>
                         </div>
+                        <Link className="leak-list__practice" to={`/puzzles?tag=${encodeURIComponent(leak.tag)}`}>
+                          Practise this leak <ArrowRight size={13} />
+                        </Link>
                       </div>
                     </li>
                   ))}
@@ -211,7 +257,13 @@ export default function Dashboard() {
                 <div className="briefing__head">
                   <p className="ef-label">Weekly coach briefing</p>
                   {weekly.data ? (
-                    <span className="ef-mono briefing__status">{weekly.data.ai_status}</span>
+                    <span className="ef-mono briefing__status">
+                      {weekly.data.ai_status === 'ok'
+                        ? 'live coach'
+                        : weekly.data.ai_status === 'unavailable'
+                          ? 'coach notes · offline'
+                          : 'coach notes'}
+                    </span>
                   ) : null}
                 </div>
                 {weekly.isLoading ? <LoadingBlock label="Reading the week…" /> : null}
@@ -263,7 +315,9 @@ export default function Dashboard() {
                 <p className="ef-label">Recent games</p>
                 <h2>The evidence ledger</h2>
               </div>
-              <span className="section-head__link ef-mono">{games.data?.total ?? 0} total</span>
+              <Link className="section-head__link" to="/games">
+                View all {games.data?.total ?? 0} games <ArrowRight size={13} />
+              </Link>
             </div>
             <div className="ledger" role="table" aria-label="Recent games">
               <div className="ledger__head" role="row">

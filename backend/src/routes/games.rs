@@ -31,11 +31,15 @@ pub async fn list(
     let total: i64 = sqlx::query_scalar(
         "SELECT COUNT(*) FROM games WHERE user_id = $1
          AND ($2::text IS NULL OR analysis_status = $2)
-         AND ($3::text IS NULL OR result = $3)",
+         AND ($3::text IS NULL OR result = $3)
+         AND ($4::text IS NULL OR opening_eco = $4)
+         AND ($5::text IS NULL OR time_class = $5)",
     )
     .bind(auth.id)
     .bind(query.status.as_deref())
     .bind(query.result.as_deref())
+    .bind(query.opening.as_deref())
+    .bind(query.time_class.as_deref())
     .fetch_one(&state.db)
     .await?;
 
@@ -43,12 +47,16 @@ pub async fn list(
         "SELECT {GAME_COLUMNS} FROM games WHERE user_id = $1
          AND ($2::text IS NULL OR analysis_status = $2)
          AND ($3::text IS NULL OR result = $3)
-         ORDER BY start_time DESC LIMIT $4 OFFSET $5"
+         AND ($4::text IS NULL OR opening_eco = $4)
+         AND ($5::text IS NULL OR time_class = $5)
+         ORDER BY start_time DESC LIMIT $6 OFFSET $7"
     );
     let items = sqlx::query_as::<_, GameSummary>(&sql)
         .bind(auth.id)
         .bind(query.status.as_deref())
         .bind(query.result.as_deref())
+        .bind(query.opening.as_deref())
+        .bind(query.time_class.as_deref())
         .bind(i64::from(limit))
         .bind(i64::from(offset))
         .fetch_all(&state.db)

@@ -1,3 +1,5 @@
+import { getDisplayTimeZone } from './timezone'
+
 export function formatEval(cp: number | null | undefined, mate?: number | null): string {
   if (mate !== null && mate !== undefined) {
     return mate > 0 ? `M${mate}` : `-M${Math.abs(mate)}`
@@ -35,6 +37,7 @@ export function formatDate(value: string | null | undefined): string {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
+    timeZone: getDisplayTimeZone(),
   }).format(date)
 }
 
@@ -47,7 +50,17 @@ export function formatDateTime(value: string | null | undefined): string {
     month: 'short',
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: getDisplayTimeZone(),
   }).format(date)
+}
+
+export function formatWeekdayDate(value: Date): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    timeZone: getDisplayTimeZone(),
+  }).format(value)
 }
 
 export function relativeTime(value: string | null | undefined): string {
@@ -63,6 +76,10 @@ export function relativeTime(value: string | null | undefined): string {
   const days = Math.round(hours / 24)
   if (days < 30) return `${days}d ago`
   return formatDate(value)
+}
+
+export function formatRelativeRule(value: string | null | undefined): string {
+  return relativeTime(value)
 }
 
 export function classificationLabel(value: string | null | undefined): string {

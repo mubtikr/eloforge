@@ -1,17 +1,19 @@
 import {
   BarChart3,
+  BookOpen,
   CalendarCheck,
   ChevronRight,
   Crosshair,
   LayoutDashboard,
   LogOut,
   Map,
+  MoreHorizontal,
   Settings,
   Shield,
   Swords,
 } from 'lucide-react'
 import { type ReactNode } from 'react'
-import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 
 import { api } from '../api/client'
 import { useAuth } from '../hooks/useAuth'
@@ -19,6 +21,7 @@ import { useLiveEvents } from '../hooks/useLiveEvents'
 
 const NAV = [
   { to: '/app', label: 'Today', icon: LayoutDashboard, end: true },
+  { to: '/games', label: 'Review', icon: BookOpen },
   { to: '/openings', label: 'Openings', icon: BarChart3 },
   { to: '/focus', label: 'Focus', icon: Crosshair },
   { to: '/puzzles', label: 'Puzzles', icon: Shield },
@@ -28,16 +31,17 @@ const NAV = [
 
 const MOBILE_NAV = [
   { to: '/app', label: 'Today', icon: LayoutDashboard, end: true },
+  { to: '/games', label: 'Review', icon: BookOpen },
   { to: '/puzzles', label: 'Puzzles', icon: Shield },
   { to: '/sparring', label: 'Sparring', icon: Swords },
-  { to: '/roadmap', label: 'Roadmap', icon: Map },
-  { to: '/settings', label: 'Settings', icon: Settings },
+  { to: '/more', label: 'More', icon: MoreHorizontal },
 ]
 
 export default function AppShell({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const live = useLiveEvents(Boolean(user))
   const navigate = useNavigate()
+  const location = useLocation()
 
   async function logout() {
     await api<void>('/api/auth/logout', { method: 'POST' })
@@ -47,6 +51,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="app ef-grain">
+      <a className="skip-link" href="#main-content">Skip to main content</a>
       <aside className="app-rail">
         <Link className="wordmark app-rail__brand" to="/app">
           <span className="wordmark__mark" aria-hidden="true">
@@ -133,7 +138,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
           </div>
         ) : null}
 
-        <main className="app-main">{children}</main>
+        <main className="app-main" id="main-content">{children}</main>
 
         <footer className="app-footer">
           <span>EloForge · deterministic Stockfish 17 review</span>
@@ -148,12 +153,19 @@ export default function AppShell({ children }: { children: ReactNode }) {
       <nav className="app-bottom" aria-label="Primary mobile">
         {MOBILE_NAV.map((item) => {
           const Icon = item.icon
+          const moreActive =
+            item.to === '/more' &&
+            ['/openings', '/focus', '/roadmap', '/settings', '/more'].some(
+              (path) => location.pathname === path,
+            )
           return (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.end}
-              className={({ isActive }) => `app-bottom__link${isActive ? ' is-active' : ''}`}
+              className={({ isActive }) =>
+                `app-bottom__link${isActive || moreActive ? ' is-active' : ''}`
+              }
             >
               <Icon size={18} strokeWidth={1.7} />
               <span>{item.label}</span>

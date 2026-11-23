@@ -131,6 +131,10 @@ SOLUTION="$(printf '%s' "$DUE" | python3 -c 'import json,sys; data=json.load(sys
 ATTEMPT="$(curl -fsS -X POST "${AUTH[@]}" -H 'content-type: application/json' \
   -d "{\"uci\":\"$SOLUTION\",\"hints\":0,\"elapsed_ms\":2400}" "$BASE/api/puzzles/$PUZZLE_ID/attempt")"
 printf '%s' "$ATTEMPT" | python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["correct"] is True; print("Puzzle scheduled:", data["interval_days"], "day(s)")'
+EXPLANATION="$(curl -fsS "${AUTH[@]}" "$BASE/api/puzzles/$PUZZLE_ID/explanation")"
+printf '%s' "$EXPLANATION" | python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["goal"] and data["why"] and data["next_time_rule"]; print("Puzzle explanation:", data["goal"])'
+FOCUS="$(curl -fsS "${AUTH[@]}" "$BASE/api/focus?tz=Africa%2FCairo")"
+printf '%s' "$FOCUS" | python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["timezone"] == "Africa/Cairo"; print("Focus timezone:", data["timezone"])'
 
 log "Playing an endgame sparring move against the engine"
 SESSION="$(curl -fsS -X POST "${AUTH[@]}" -H 'content-type: application/json' \

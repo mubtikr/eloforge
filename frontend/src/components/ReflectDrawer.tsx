@@ -35,20 +35,65 @@ export default function ReflectDrawer({ open, gameId, move, onClose, onSaved }: 
   const [streaming, setStreaming] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const drawerRef = useRef<HTMLElement>(null)
+  const onCloseRef = useRef(onClose)
+
+  useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
 
   useEffect(() => {
     if (!open) return
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
     const timer = window.setTimeout(() => textareaRef.current?.focus(), 80)
-    const escape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onCloseRef.current()
+        return
+      }
+      if (event.key !== 'Tab') return
+      const drawer = drawerRef.current
+      if (!drawer) return
+      const focusable = Array.from(
+        drawer.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((element) => element.offsetParent !== null)
+      if (focusable.length === 0) {
+        event.preventDefault()
+        return
+      }
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (!first || !last) return
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
     }
-    window.addEventListener('keydown', escape)
+    const onFocusIn = (event: FocusEvent) => {
+      const drawer = drawerRef.current
+      const target = event.target
+      if (drawer && target instanceof Node && !drawer.contains(target)) {
+        textareaRef.current?.focus()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    document.addEventListener('focusin', onFocusIn)
     return () => {
       window.clearTimeout(timer)
-      window.removeEventListener('keydown', escape)
+      window.removeEventListener('keydown', onKeyDown)
+      document.removeEventListener('focusin', onFocusIn)
+      document.body.style.overflow = previousOverflow
       abortRef.current?.abort()
+      if (opener?.isConnected) opener.focus()
     }
-  }, [open, onClose])
+  }, [open])
 
   if (!open || !move) return null
 
@@ -103,11 +148,17 @@ export default function ReflectDrawer({ open, gameId, move, onClose, onSaved }: 
   return (
     <div className="drawer-layer" role="presentation">
       <button className="drawer-backdrop" type="button" aria-label="Close reflection" onClick={onClose} />
-      <aside className="drawer" role="dialog" aria-modal="true" aria-label="Why did I play this?">
+      <aside
+        className="drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="reflection-title"
+        ref={drawerRef}
+      >
         <header className="drawer__head">
           <div>
             <p className="ef-label">Reflection</p>
-            <h2>Why did I play this?</h2>
+            <h2 id="reflection-title">Why did I play this?</h2>
           </div>
           <button className="icon-btn" type="button" onClick={onClose} aria-label="Close">
             <X size={17} />
@@ -178,7 +229,7 @@ export default function ReflectDrawer({ open, gameId, move, onClose, onSaved }: 
         {notice ? <p className="drawer__notice">{notice}</p> : null}
 
         {feedback || streaming ? (
-          <div className="drawer__response" aria-live="polite">
+          <div className="drawer__response" aria-busy={streaming}>
             <p className="ef-label">
               {meta?.ai_configured ? `Coach · ${meta.model}` : 'Deterministic coach notes'}
             </p>
@@ -188,7 +239,7 @@ export default function ReflectDrawer({ open, gameId, move, onClose, onSaved }: 
         ) : null}
 
         {rule ? (
-          <div className="next-rule">
+          <div className="next-rule" role="status">
             <p className="ef-label">Next-time rule</p>
             <p>{rule}</p>
             {status && status !== 'ok' ? (

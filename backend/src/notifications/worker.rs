@@ -23,6 +23,7 @@ use crate::{
 #[derive(Debug, Clone, sqlx::FromRow)]
 pub struct SettingsRow {
     pub user_id: Uuid,
+    pub configured: bool,
     pub telegram_chat_id: Option<String>,
     pub email: Option<String>,
     pub web_push_subscription: Option<serde_json::Value>,
@@ -38,6 +39,7 @@ impl SettingsRow {
     pub fn to_dto(&self) -> NotificationSettingsDto {
         NotificationSettingsDto {
             user_id: self.user_id,
+            configured: self.configured,
             telegram_chat_id: self.telegram_chat_id.clone(),
             email: self.email.clone(),
             web_push_subscription: self.web_push_subscription.clone(),
@@ -51,7 +53,8 @@ impl SettingsRow {
 
 pub async fn load_settings(db: &PgPool, user_id: Uuid) -> AppResult<SettingsRow> {
     let row = sqlx::query_as::<_, SettingsRow>(
-        "SELECT u.id AS user_id, ns.telegram_chat_id, ns.email, ns.web_push_subscription,
+        "SELECT u.id AS user_id, (ns.user_id IS NOT NULL) AS configured,
+                ns.telegram_chat_id, ns.email, ns.web_push_subscription,
                 COALESCE(ns.daily_reminder, true) AS daily_reminder,
                 COALESCE(ns.tilt_alerts, true) AS tilt_alerts,
                 COALESCE(ns.reminder_hour, 9) AS reminder_hour,
@@ -91,8 +94,9 @@ pub fn spawn_worker(state: AppState) {
 
 async fn run_cycle(state: &AppState) -> AppResult<()> {
     let rows = sqlx::query_as::<_, SettingsRow>(
-        "SELECT ns.user_id, ns.telegram_chat_id, ns.email, ns.web_push_subscription,
-                ns.daily_reminder, ns.tilt_alerts, ns.reminder_hour, ns.timezone,
+        "SELECT ns.user_id, true AS configured, ns.telegram_chat_id, ns.email,
+                ns.web_push_subscription, ns.daily_reminder, ns.tilt_alerts,
+                ns.reminder_hour, ns.timezone,
                 u.chesscom_username AS username, u.current_elo
          FROM notification_settings ns
          JOIN users u ON u.id = ns.user_id

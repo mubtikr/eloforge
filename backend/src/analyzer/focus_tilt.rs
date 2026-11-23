@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use chrono::Timelike;
+use chrono_tz::Tz;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use ts_rs::TS;
@@ -8,7 +9,7 @@ use uuid::Uuid;
 
 use crate::{
     analyzer::winprob::{accuracy_from_epl, is_bad},
-    error::AppResult,
+    error::{AppError, AppResult},
 };
 
 const EXPORT: &str = "../../frontend/src/api/bindings.ts";
@@ -52,6 +53,7 @@ pub struct SessionIndexRate {
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export, export_to = EXPORT)]
 pub struct FocusReport {
+    pub timezone: String,
     pub total_user_moves: i32,
     pub impulsive_blunders: i32,
     pub impulsivity_index: f64,
@@ -89,7 +91,32 @@ struct FocusGame {
     result: String,
 }
 
-pub async fn compute_focus(pool: &PgPool, user_id: Uuid) -> AppResult<FocusReport> {
+pub async fn resolve_timezone(
+    pool: &PgPool,
+    user_id: Uuid,
+    requested: Option<&str>,
+) -> AppResult<String> {
+    let timezone = match requested {
+        Some(timezone) if !timezone.trim().is_empty() => timezone.trim().to_string(),
+        _ => sqlx::query_scalar::<_, Option<String>>(
+            "SELECT timezone FROM notification_settings WHERE user_id = $1",
+        )
+        .bind(user_id)
+        .fetch_optional(pool)
+        .await?
+        .flatten()
+        .unwrap_or_else(|| "UTC".to_string()),
+    };
+    timezone
+        .parse::<Tz>()
+        .map_err(|_| AppError::bad_request("Unknown IANA timezone."))?;
+    Ok(timezone)
+}
+
+pub async fn compute_focus(pool: &PgPool, user_id: Uuid, timezone: &str) -> AppResult<FocusReport> {
+    let tz: Tz = timezone
+        .parse()
+        .map_err(|_| AppError::bad_request("Unknown IANA timezone."))?;
     let moves = sqlx::query_as::<_, FocusMove>(
         "SELECT g.id AS game_id, g.time_class, g.time_control,
                 m.ply, m.time_spent_sec, m.clock_remaining_sec,
@@ -177,7 +204,7 @@ pub async fn compute_focus(pool: &PgPool, user_id: Uuid) -> AppResult<FocusRepor
     let mut hours: HashMap<i32, Vec<f64>> = HashMap::new();
     let mut hour_wins: HashMap<i32, (i32, i32)> = HashMap::new();
     for game in &games {
-        let hour = game.start_time.hour() as i32;
+        let hour = game.start_time.with_timezone(&tz).hour() as i32;
         if let Some(accuracy) = game.accuracy_user {
             hours.entry(hour).or_default().push(accuracy);
         }
@@ -305,6 +332,7 @@ pub async fn compute_focus(pool: &PgPool, user_id: Uuid) -> AppResult<FocusRepor
         .collect();
 
     Ok(FocusReport {
+        timezone: timezone.to_string(),
         total_user_moves,
         impulsive_blunders: impulsive,
         impulsivity_index,

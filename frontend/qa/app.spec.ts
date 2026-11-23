@@ -22,6 +22,8 @@ test('study room pages render without runtime errors', async ({ page, context })
 
   const routes = [
     ['/app', 'dashboard'],
+    ['/games', 'games'],
+    ['/more', 'more'],
     ['/openings', 'openings'],
     ['/focus', 'focus'],
     ['/puzzles', 'puzzles'],
@@ -43,11 +45,11 @@ test('study room pages render without runtime errors', async ({ page, context })
     await page.waitForTimeout(900)
     console.log('match =>', (await page.locator('h1').first().innerText()).replace(/\n/g, ' '))
     await page.screenshot({ path: '/tmp/shots/match.png', fullPage: true })
-    const badMove = page.locator('.move-row.is-blunder, .move-row.is-mistake').first()
+    const badMove = page.locator('.critical-row').first()
     if (await badMove.count()) {
       await badMove.click()
       await page.waitForTimeout(300)
-      const reflect = page.getByRole('button', { name: /why did i play this/i }).first()
+      const reflect = page.getByRole('button', { name: /reflect on this move/i }).first()
       if (await reflect.count()) {
         await reflect.click()
         await page.waitForTimeout(300)
@@ -63,9 +65,28 @@ test('study room pages render without runtime errors', async ({ page, context })
   await page.screenshot({ path: '/tmp/shots/landing.png', fullPage: true })
 
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/app', { waitUntil: 'domcontentloaded' })
-  await page.waitForTimeout(500)
-  await page.screenshot({ path: '/tmp/shots/dashboard-mobile.png', fullPage: true })
+  const mobileRoutes = [
+    ['/app', 'dashboard-mobile'],
+    ['/games', 'games-mobile'],
+    [`/games/${GAME_ID}`, 'match-mobile'],
+    ['/puzzles', 'puzzles-mobile'],
+    ['/sparring', 'sparring-mobile'],
+    ['/focus', 'focus-mobile'],
+    ['/openings', 'openings-mobile'],
+    ['/roadmap', 'roadmap-mobile'],
+    ['/settings', 'settings-mobile'],
+    ['/more', 'more-mobile'],
+  ] as const
+  for (const [route, name] of mobileRoutes) {
+    await page.goto(route, { waitUntil: 'domcontentloaded' })
+    await page.waitForTimeout(900)
+    const board = page.locator('cg-board').first()
+    if (await board.count()) {
+      const box = await board.boundingBox()
+      if (!box || box.width > 390) throw new Error(`${name}: board overflow ${box?.width}`)
+    }
+    await page.screenshot({ path: `/tmp/shots/${name}.png`, fullPage: true })
+  }
 
   console.log('ERRORS', JSON.stringify(errors, null, 2))
   console.log('HTTP_FAILURES', JSON.stringify(failures, null, 2))

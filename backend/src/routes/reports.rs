@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::StatusCode,
     response::{IntoResponse, Response},
     Json,
@@ -7,7 +7,7 @@ use axum::{
 use uuid::Uuid;
 
 use crate::{
-    analyzer::focus_tilt::{compute_focus, FocusReport},
+    analyzer::focus_tilt::{compute_focus, resolve_timezone, FocusReport},
     auth::AuthUser,
     error::AppResult,
     models::GameDetail,
@@ -49,8 +49,13 @@ pub async fn reflections(
     Ok(Json(reports::reflection_report(&state.db, auth.id).await?))
 }
 
-pub async fn focus(State(state): State<AppState>, auth: AuthUser) -> AppResult<Json<FocusReport>> {
-    Ok(Json(compute_focus(&state.db, auth.id).await?))
+pub async fn focus(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Query(query): Query<crate::routes::focus::FocusQuery>,
+) -> AppResult<Json<FocusReport>> {
+    let timezone = resolve_timezone(&state.db, auth.id, query.tz.as_deref()).await?;
+    Ok(Json(compute_focus(&state.db, auth.id, &timezone).await?))
 }
 
 pub async fn roadmap(

@@ -245,6 +245,8 @@ pub struct PuzzleAttemptRequest {
     pub hints: i32,
     pub elapsed_ms: Option<i64>,
     pub rating: Option<u8>,
+    #[serde(default)]
+    pub revealed: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, TS)]
@@ -288,6 +290,22 @@ pub struct PuzzleQuery {
     pub kind: Option<String>,
     #[serde(default)]
     pub mastered: Option<bool>,
+    pub tag: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export, export_to = EXPORT)]
+pub struct PuzzleExplanation {
+    pub puzzle_id: Uuid,
+    pub goal: String,
+    pub motif: String,
+    pub why: String,
+    pub solution_san: String,
+    pub opponent_reply_san: Option<String>,
+    pub best_line_san: Vec<String>,
+    pub next_time_rule: String,
+    #[ts(type = "unknown | null")]
+    pub best_line: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -313,8 +331,20 @@ pub struct SparringSessionDto {
     pub status: String,
     pub result: Option<String>,
     pub moves: Vec<SparringMoveDto>,
+    pub puzzle_epl: Option<f64>,
+    pub puzzle_tags: Vec<String>,
+    pub white_username: Option<String>,
+    pub black_username: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, Deserialize, TS)]
+#[ts(export, export_to = EXPORT)]
+pub struct SparringHint {
+    pub uci: String,
+    pub san: Option<String>,
+    pub message: String,
 }
 
 #[derive(Debug, Deserialize, TS)]
@@ -375,6 +405,8 @@ pub struct RoadmapStageView {
     pub criteria: Vec<String>,
     pub completed: bool,
     pub current: bool,
+    pub rating_reached: bool,
+    pub criteria_met: bool,
     #[ts(type = "unknown")]
     pub progress: serde_json::Value,
 }
@@ -394,6 +426,7 @@ pub struct RoadmapView {
 #[ts(export, export_to = EXPORT)]
 pub struct NotificationSettingsDto {
     pub user_id: Uuid,
+    pub configured: bool,
     pub telegram_chat_id: Option<String>,
     pub email: Option<String>,
     #[ts(type = "unknown | null")]
@@ -456,6 +489,8 @@ pub struct GamesQuery {
     pub offset: Option<i32>,
     pub status: Option<String>,
     pub result: Option<String>,
+    pub opening: Option<String>,
+    pub time_class: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]

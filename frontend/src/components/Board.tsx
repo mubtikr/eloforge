@@ -1,3 +1,4 @@
+import { Chess } from 'chess.js'
 import { Chessground } from 'chessground'
 import type { Api } from 'chessground/api'
 import type { Config } from 'chessground/config'
@@ -15,6 +16,7 @@ interface BoardProps {
   orientation: 'white' | 'black'
   lastMove?: string[] | null
   arrows?: BoardArrow[]
+  selectedSquare?: string | null
   check?: boolean
   interactive?: boolean
   movableColor?: 'white' | 'black'
@@ -32,11 +34,35 @@ const BRUSHES = {
   sienna: { key: 'sienna', color: '#a64a24', opacity: 0.82, lineWidth: 9 },
 }
 
+function boardSignature(fen: string): string {
+  return fen.split(' ').slice(0, 4).join(' ')
+}
+
+function singleStep(previous: string, next: string): { from: string; to: string } | null {
+  if (boardSignature(previous) === boardSignature(next)) return null
+  try {
+    const before = new Chess(previous)
+    const target = boardSignature(next)
+    for (const move of before.moves({ verbose: true })) {
+      if (move.san.startsWith('O-O') || move.promotion) continue
+      const candidate = new Chess(previous)
+      candidate.move(move.san)
+      if (boardSignature(candidate.fen()) === target) {
+        return { from: move.from, to: move.to }
+      }
+    }
+  } catch {
+    return null
+  }
+  return null
+}
+
 export default function Board({
   fen,
   orientation,
   lastMove,
   arrows = [],
+  selectedSquare = null,
   check = false,
   interactive = false,
   movableColor,
@@ -47,6 +73,7 @@ export default function Board({
   const hostRef = useRef<HTMLDivElement>(null)
   const apiRef = useRef<Api | null>(null)
   const moveRef = useRef(onMove)
+  const renderedFenRef = useRef<string | null>(null)
   moveRef.current = onMove
 
   useEffect(() => {
@@ -56,6 +83,7 @@ export default function Board({
       fen,
       orientation,
       coordinates: true,
+      blockTouchScroll: true,
       animation: { enabled: !reduce, duration: 200 },
       highlight: { lastMove: true, check: true },
       drawable: {
@@ -84,9 +112,11 @@ export default function Board({
     }
     const api = Chessground(hostRef.current, config)
     apiRef.current = api
+    renderedFenRef.current = fen
     return () => {
       api.destroy()
       apiRef.current = null
+      renderedFenRef.current = null
     }
     // The board is created once; updates flow through the effect below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -95,12 +125,13 @@ export default function Board({
   useEffect(() => {
     const api = apiRef.current
     if (!api) return
+
     const update: Config = {
-      fen,
       orientation: orientation as Color,
       turnColor: fen.split(' ')[1] === 'b' ? 'black' : 'white',
       check,
       lastMove: (lastMove ?? undefined) as Key[] | undefined,
+      selected: (selectedSquare ?? undefined) as Key | undefined,
       drawable: {
         brushes: BRUSHES,
         autoShapes: arrows.map((arrow) => ({
@@ -124,20 +155,35 @@ export default function Board({
         },
       }
     }
-    api.set(update)
-  }, [fen, orientation, lastMove, arrows, check, interactive, movableColor, dests])
+
+    const previous = renderedFenRef.current
+    const step = previous ? singleStep(previous, fen) : null
+    if (previous && previous !== fen && step) {
+      // Animate exactly one arriving move and update metadata without re-reading
+      // the whole FEN, which is what caused the piece to jump back.
+      api.move(step.from as Key, step.to as Key)
+      api.set(update)
+    } else {
+      api.set({ ...update, fen })
+    }
+    renderedFenRef.current = fen
+  }, [fen, orientation, lastMove, arrows, selectedSquare, check, interactive, movableColor, dests])
 
   return (
     <div
       className="board-frame"
-      role="img"
+      data-fen={fen}
+      role={interactive ? 'group' : 'img'}
       aria-label={ariaLabel}
-      ref={(node) => {
-        // keep a stable host element while allowing the ref callback
-        hostRef.current = node
-      }}
+      aria-roledescription={interactive ? 'interactive chess board' : 'chess position'}
     >
       <div className="board-host" ref={hostRef} />
+      {interactive ? (
+        <p className="sr-only">
+          Use the move field below the board for keyboard and screen-reader move entry.
+          The move list and coach notes describe the current position.
+        </p>
+      ) : null}
     </div>
   )
 }

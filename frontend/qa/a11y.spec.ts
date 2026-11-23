@@ -12,7 +12,7 @@ test('key pages have no serious accessibility violations', async ({ page, contex
   test.skip(!GAME_ID, 'Set EF_GAME to a game id owned by that session.')
   await context.addCookies([{ name: 'ef_session', value: TOKEN, domain: 'localhost', path: '/' }])
 
-  const routes = ['/app', '/openings', '/focus', '/puzzles', '/sparring', '/roadmap', '/settings', `/games/${GAME_ID}`]
+  const routes = ['/app', '/games', `/games/${GAME_ID}`, '/openings', '/focus', '/puzzles', '/sparring', '/roadmap', '/settings', '/more']
   for (const route of routes) {
     await page.goto(route, { waitUntil: 'domcontentloaded' })
     await page.waitForTimeout(1200)
